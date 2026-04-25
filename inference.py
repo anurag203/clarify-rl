@@ -128,12 +128,11 @@ def parse_tool_call(response_text: str) -> tuple[Optional[str], dict]:
     if json_tool_name:
         return json_tool_name, json_tool_args
 
-    func_match = re.search(r"(\w+)\s*\(([^)]*)\)", cleaned)
-    if func_match:
-        tool_name = func_match.group(1).strip()
+    fn_call = _find_balanced_func_call(cleaned)
+    if fn_call:
+        tool_name, raw_body = fn_call
         if tool_name in ("ask_question", "propose_plan", "get_task_info"):
-            raw_args_str = func_match.group(2).strip()
-            args = _parse_positional_args(tool_name, raw_args_str)
+            args = _parse_positional_args(tool_name, raw_body.strip())
             return tool_name, args
 
     action_match = re.search(
@@ -269,16 +268,93 @@ def _parse_args_fallback(raw: str) -> dict:
     return args
 
 
+_TOOL_NAMES = ("ask_question", "propose_plan", "get_task_info")
+
+
+def _find_balanced_func_call(text: str) -> Optional[tuple[str, str]]:
+    """Find the first `tool_name(...)` call with balanced parens.
+
+    Returns (name, body) where body is the parenthesized content with the
+    outer parens stripped. Handles nested parens inside JSON plans and quoted
+    questions like `What is your budget? (in USD)`. None if no recognised
+    tool name is found.
+    """
+    for match in re.finditer(r"\b(\w+)\s*\(", text):
+        name = match.group(1)
+        if name not in _TOOL_NAMES:
+            continue
+        body_start = match.end()
+        depth = 1
+        in_str = False
+        quote_char = ""
+        escape = False
+        for index in range(body_start, len(text)):
+            char = text[index]
+            if escape:
+                escape = False
+                continue
+            if in_str:
+                if char == "\\":
+                    escape = True
+                elif char == quote_char:
+                    in_str = False
+                continue
+            if char in ("'", '"'):
+                in_str = True
+                quote_char = char
+                continue
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    return name, text[body_start:index]
+    return None
+
+
 def _parse_positional_args(tool_name: str, raw_args: str) -> dict:
+    """Parse the body of a `tool_name(...)` call.
+
+    Handles three syntaxes the trained Qwen3 models actually produce:
+      1. Single keyword arg with quoted value: `question="What is your budget?"`
+      2. Bare keyword arg (unquoted JSON-ish):   `plan={"event_type": "wedding"}`
+      3. Pure positional (legacy):                `What is your budget?`
+
+    The previous implementation just split on `,` and stripped end quotes,
+    which corrupted `question="..."` into a literal `question="...` string.
+    """
     if not raw_args:
         return {}
-    parts = [p.strip().strip("'\"") for p in raw_args.split(",")]
     arg_map = {
         "ask_question": ["question"],
         "propose_plan": ["plan"],
     }
     param_names = arg_map.get(tool_name, [])
-    args = {}
+
+    text = raw_args.strip()
+
+    kw_quoted = re.match(
+        r"^\s*(\w+)\s*=\s*(['\"])(.*)\2\s*$",
+        text,
+        flags=re.DOTALL,
+    )
+    if kw_quoted:
+        key = kw_quoted.group(1)
+        val = kw_quoted.group(3).replace('\\"', '"').replace("\\'", "'")
+        return {key: val}
+
+    kw_brace = re.match(r"^\s*(\w+)\s*=\s*(\{.*\})\s*$", text, flags=re.DOTALL)
+    if kw_brace:
+        return {kw_brace.group(1): kw_brace.group(2)}
+
+    if "=" in text and len(param_names) == 1:
+        key, _, val = text.partition("=")
+        key_clean = key.strip()
+        if key_clean and key_clean.isidentifier():
+            return {key_clean: val.strip().strip("'\"")}
+
+    parts = [p.strip().strip("'\"") for p in text.split(",")]
+    args: dict = {}
     for i, part in enumerate(parts):
         if i < len(param_names):
             args[param_names[i]] = part
