@@ -10,13 +10,11 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     mv /root/.local/bin/uv /usr/local/bin/uv && \
     mv /root/.local/bin/uvx /usr/local/bin/uvx
 
-COPY pyproject.toml uv.lock* ./
-
-RUN uv sync --frozen --no-install-project --no-editable 2>/dev/null || uv pip install -e .
-
 COPY . .
 
-RUN uv sync --frozen --no-editable 2>/dev/null || uv pip install -e .
+RUN uv venv .venv && \
+    . .venv/bin/activate && \
+    uv pip install -e .
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app:$PYTHONPATH"
