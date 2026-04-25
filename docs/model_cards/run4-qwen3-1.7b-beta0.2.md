@@ -151,11 +151,22 @@ see the full blog at
 
 ## How to use it
 
+> **Weights mirror note for judges:** This repo serves as the *rich
+> hackathon model card*. The 3.4 GB `model.safetensors` is mirrored from
+> the original training output at
+> [`2022uec1542/clarify-rl-grpo-qwen3-1-7b`](https://huggingface.co/2022uec1542/clarify-rl-grpo-qwen3-1-7b).
+> If the mirror is still in flight when you grab this, just point
+> `from_pretrained` at that upstream repo — same checkpoint, same config,
+> same eval. The live demo Space already streams from upstream so it works
+> today regardless of mirror state.
+
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 
 repo = "anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2"
+# fallback while the personalized mirror is still uploading:
+# repo = "2022uec1542/clarify-rl-grpo-qwen3-1-7b"
 tok = AutoTokenizer.from_pretrained(repo, trust_remote_code=True)
 mdl = AutoModelForCausalLM.from_pretrained(
     repo,
