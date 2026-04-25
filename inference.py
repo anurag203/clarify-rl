@@ -413,12 +413,70 @@ def _parse_positional_args(tool_name: str, raw_args: str) -> dict:
         if key_clean and key_clean.isidentifier():
             return {key_clean: val.strip().strip("'\"")}
 
-    parts = [p.strip().strip("'\"") for p in text.split(",")]
+    quoted = re.match(r"""^\s*(['"])(.*)\1\s*$""", text, flags=re.DOTALL)
+    if quoted and param_names:
+        val = quoted.group(2).replace('\\"', '"').replace("\\'", "'")
+        return {param_names[0]: val}
+
+    if param_names and text.startswith("{") and text.endswith("}"):
+        return {param_names[0]: text}
+
+    parts = _split_top_level_commas(text)
     args: dict = {}
     for i, part in enumerate(parts):
+        cleaned = part.strip().strip("'\"")
         if i < len(param_names):
-            args[param_names[i]] = part
+            args[param_names[i]] = cleaned
     return args
+
+
+def _split_top_level_commas(text: str) -> list[str]:
+    """Split on commas only when not inside quotes / brackets / braces."""
+    out: list[str] = []
+    depth_paren = 0
+    depth_brace = 0
+    depth_brack = 0
+    in_str = False
+    quote = ""
+    escape = False
+    buf: list[str] = []
+    for ch in text:
+        if escape:
+            buf.append(ch)
+            escape = False
+            continue
+        if in_str:
+            if ch == "\\":
+                escape = True
+            elif ch == quote:
+                in_str = False
+            buf.append(ch)
+            continue
+        if ch in ("'", '"'):
+            in_str = True
+            quote = ch
+            buf.append(ch)
+            continue
+        if ch == "(":
+            depth_paren += 1
+        elif ch == ")":
+            depth_paren -= 1
+        elif ch == "{":
+            depth_brace += 1
+        elif ch == "}":
+            depth_brace -= 1
+        elif ch == "[":
+            depth_brack += 1
+        elif ch == "]":
+            depth_brack -= 1
+        elif ch == "," and depth_paren == 0 and depth_brace == 0 and depth_brack == 0:
+            out.append("".join(buf))
+            buf = []
+            continue
+        buf.append(ch)
+    if buf:
+        out.append("".join(buf))
+    return out
 
 
 def _parse_result_field(obs: dict) -> str:
