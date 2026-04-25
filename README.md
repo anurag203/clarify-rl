@@ -67,6 +67,8 @@ Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026, Bangalore
 | Training notebook (Colab) | https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb |
 | Writeup (HF blog post) | [`docs/blog.md`](docs/blog.md) |
 | Trace demo | [`docs/trace_demo.md`](docs/trace_demo.md) |
+| Slide deck (5-min judge read) | [`docs/slides.md`](docs/slides.md) |
+| Submission auto-validator gates | [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md) |
 | GitHub repo | https://github.com/anurag203/clarify-rl |
 | W&B dashboard (3 runs live) | https://wandb.ai/anuragagarwal203-cisco/clarify-rl |
 | **Interactive demo (replay + live chat)** | **https://huggingface.co/spaces/anurag203/clarify-rl-demo** |
