@@ -1,0 +1,23 @@
+spec_version: 1
+name: clarify_rl
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000
+
+tasks:
+  - id: easy
+    title: "Mild Ambiguity (2-3 fields)"
+    description: "Vague request from one of 5 families (coding / medical-intake / support-triage / meeting / event). Agent must ask 1-2 clarifying questions to recover the critical fields before proposing a plan."
+    max_steps: 8
+    difficulty: easy
+  - id: medium
+    title: "Moderate Ambiguity (4-5 fields)"
+    description: "Vague request with 4-5 hidden fields the agent must surface by asking. Penalizes hallucinated values that the user never confirmed."
+    max_steps: 10
+    difficulty: medium
+  - id: hard
+    title: "High Ambiguity (6-7 fields)"
+    description: "Vague request with 6-7 hidden fields. Agent must prioritize which to ask about within a 6-question budget and avoid hallucinating uncovered values."
+    max_steps: 12
+    difficulty: hard
