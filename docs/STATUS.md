@@ -2,7 +2,7 @@
 
 > **Update this file at the END of every session.** Keep it short (≤ 100 lines). For history, see `SESSION_LOG.md`.
 
-**Last updated**: 2026-04-26 03:35 IST — Cascade. **🎯 Submission lap closed + judge-facing layer added.** Run 4 eval (KL-anchor, β=0.2) is the central finding: event_planning μ 0.000 → **0.175** (beats 1.7B base 0.138), avg_score 0.029 → **0.056**, meeting peak 0.725 → 0.350 (the cost of breadth). All 3 trained runs are mirrored to a public W&B project (<https://wandb.ai/anuragagarwal203-cisco/clarify-rl>) for interactive curve inspection, code is published at <https://github.com/anurag203/clarify-rl>, and `TODO_GH_ORG` placeholders are gone. Run 3 v5 was canceled at 48 min in HF Jobs SCHEDULING queue → 4B GRPO logged as future work.
+**Last updated**: 2026-04-26 04:00 IST — Cascade. **🎯 Submission lap closed + interactive demo Space deployed.** Run 4 eval (KL-anchor, β=0.2) is the central finding: event_planning μ 0.000 → **0.175** (beats 1.7B base 0.138), avg_score 0.029 → **0.056**, meeting peak 0.725 → 0.350 (the cost of breadth). All 3 trained runs are on W&B (<https://wandb.ai/anuragagarwal203-cisco/clarify-rl>), code is on GitHub (<https://github.com/anurag203/clarify-rl>), and the new judge-facing demo Space (<https://huggingface.co/spaces/anurag203/clarify-rl-demo>) has 3 tabs — Replay viewer, Run 2 vs Run 4 side-by-side, and a CPU-inference Live chat tab. Run 3 v5 was canceled at 48 min in HF Jobs SCHEDULING queue → 4B GRPO logged as future work.
 
 ## Current phase
 

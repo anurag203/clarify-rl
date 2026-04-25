@@ -16,6 +16,7 @@ Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026, Bangalore
 
 [![Open notebook in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb)
 [![HF Space](https://img.shields.io/badge/HF%20Space-clarify--rl-blue)](https://huggingface.co/spaces/agarwalanu3103/clarify-rl)
+[![Demo](https://img.shields.io/badge/HF%20Space-Interactive%20Demo-success)](https://huggingface.co/spaces/anurag203/clarify-rl-demo)
 [![W&B dashboard](https://img.shields.io/badge/W%26B-3%20runs%20live-yellow)](https://wandb.ai/anuragagarwal203-cisco/clarify-rl)
 [![Blog post](https://img.shields.io/badge/Writeup-blog.md-orange)](docs/blog.md)
 
@@ -66,6 +67,7 @@ Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026, Bangalore
 | Trace demo | [`docs/trace_demo.md`](docs/trace_demo.md) |
 | GitHub repo | https://github.com/anurag203/clarify-rl |
 | W&B dashboard (3 runs live) | https://wandb.ai/anuragagarwal203-cisco/clarify-rl |
+| **Interactive demo (replay + live chat)** | **https://huggingface.co/spaces/anurag203/clarify-rl-demo** |
 
 ## What it does
 
