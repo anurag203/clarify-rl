@@ -2,7 +2,7 @@
 
 > **Update this file at the END of every session.** Keep it short (≤ 100 lines). For history, see `SESSION_LOG.md`.
 
-**Last updated**: 2026-04-26 04:00 IST — Cascade. **🎯 Submission lap closed + interactive demo Space deployed.** Run 4 eval (KL-anchor, β=0.2) is the central finding: event_planning μ 0.000 → **0.175** (beats 1.7B base 0.138), avg_score 0.029 → **0.056**, meeting peak 0.725 → 0.350 (the cost of breadth). All 3 trained runs are on W&B (<https://wandb.ai/anuragagarwal203-cisco/clarify-rl>), code is on GitHub (<https://github.com/anurag203/clarify-rl>), and the new judge-facing demo Space (<https://huggingface.co/spaces/anurag203/clarify-rl-demo>) has 3 tabs — Replay viewer, Run 2 vs Run 4 side-by-side, and a CPU-inference Live chat tab. Run 3 v5 was canceled at 48 min in HF Jobs SCHEDULING queue → 4B GRPO logged as future work.
+**Last updated**: 2026-04-26 04:35 IST — final hackathon-criteria audit pass. **🎯 Submission lap CLOSED.** Run 4 eval (KL-anchor, β=0.2) is the central finding: event_planning μ 0.000 → **0.175** (beats 1.7B base 0.138), avg_score 0.029 → **0.056**, meeting peak 0.725 → 0.350 (the cost of breadth). All 3 trained runs are on W&B (<https://wandb.ai/anuragagarwal203-cisco/clarify-rl>), code is on GitHub (<https://github.com/anurag203/clarify-rl>), env Space at <https://huggingface.co/spaces/agarwalanu3103/clarify-rl>, demo Space at <https://huggingface.co/spaces/anurag203/clarify-rl-demo>. README has been restructured for judges (Judges-60s-Tour at top + Problem→Env→Results→Why-it-matters arc + 1-line caption under every plot + Wild Card #5 in the title block). Logged-out smoke test of all 25 submission URLs returns HTTP 200/302. Env Space `/reset` returns a real `CallToolObservation` with task data. ~12.5 h to the 5 PM IST deadline.
 
 ## Current phase
 
@@ -12,17 +12,13 @@ HF Space: <https://huggingface.co/spaces/agarwalanu3103/clarify-rl> — LIVE, 64
 
 ## Last completed (this session)
 
-- ✅ Wired `BETA` env-var → `GRPOConfig.beta` in `training/train_grpo.py`
-- ✅ **Run 3 v3** (Qwen3-4B, a100-large, num_gen=4) — OOM at step 1. Auto-pushed step-0 weights + FAILED marker, exit 2.
-- ✅ **Run 3 v5 launched**: 4B with `NUM_GENERATIONS=2 MAX_COMPLETION_LEN=768 VLLM_GPU_MEM_UTIL=0.40`, beta=0, lr=1e-6 (`69ed2569d2c8bd8662bce61a`) — _SCHEDULING 35min, queue is unusually long_
-- ✅ **Run 4 COMPLETED**: 1.7B + KL anchor (beta=0.2, lr=5e-7) finished 300 steps in 78.2 min — final reward 0.0050, max 0.114, KL stayed bounded 0.005-0.010, lr cosine-decayed correctly to 1.7e-09
-- ✅ **Run 4 eval triggered**: `69ed2ccbd2c8bd8662bce6ec` (a10g-large, n=50 v4) — RUNNING
-- ✅ Run 4 full `log_history.json` downloaded from Hub (300 entries) — replaces the partial scrape
-- ✅ **4B base eval COMPLETE**: `eval_qwen3-4b_qwen3-4b-base_n50_v4.json`, avg=**0.1446** (top of leaderboard!)
-- ✅ Built `scripts/compare_runs.py` — same-base delta + winner-highlighted scoreboard, picks 4B base as ceiling
-- ✅ Built `scripts/watch_and_eval.py` — auto-fires evals when runs finish (state persisted)
-- ✅ `make_plots.py` parser fix: `=` in labels (e.g. `beta=0`) no longer breaks LABEL=PATH split (rpartition)
-- ✅ Plot 01/02/04/06/07 all regenerated with Run 4's curve and 4B base baseline
+- ✅ **Final hackathon-criteria audit** against Discord auto-validator gates + Themes & Judging Criteria + FAQ + Help Guide — all P0/P1 gates GREEN
+- ✅ **README restructured for judging**: Judges-60s-Tour at top, Problem · Environment · Results · Why-it-matters arc, 1-line caption under every embedded plot (plots 01/02/03/04/05/06), Wild Card #5 promoted to title block
+- ✅ **Run 4 model card**: added "Weights mirror note for judges" + commented-out fallback `repo = "2022uec1542/clarify-rl-grpo-qwen3-1-7b"` so judges always have a working `from_pretrained()` path even if the personalized mirror is still uploading
+- ✅ **Logged-out smoke test of 25 submission URLs**: env Space landing/README, demo Space, GitHub repo + README + blog + slides + trace_demo + checklist + STATUS + notebook + openenv.yaml + rubrics, 3 anurag203 model cards, upstream Run 4 weights HEAD, W&B project, Colab badge target, 6 plot PNGs — all 200/302
+- ✅ **Env Space functional smoke**: `/health` → `{"status":"healthy"}`, `/reset` → real `CallToolObservation` with `family=medical_intake, request="I have a problem.", task_id=medium, max_steps=10, questions_remaining=6`
+- ✅ Env Space README has all 5 storytelling anchors (Wild Card / Judges-60s-Tour / Problem · Environment / plot has a 1-line caption / epistemic humility)
+- ✅ Pre-existing wins kept: 3 trained GRPO runs evaluated, 4B base ceiling, plots regenerated, all docs reconciled, demo Space (Replay + KL-anchor ablation + Live chat tabs) deployed
 
 ## Headline n=50 v4 numbers (fair) — corrected
 
@@ -59,10 +55,10 @@ HF Space: <https://huggingface.co/spaces/agarwalanu3103/clarify-rl> — LIVE, 64
 
 ## In progress (right now)
 
-- ✅ Submission lap is closed: 3 trained runs evaluated, 4B base eval as ceiling, all plots regenerated, all docs reconciled
-- ✅ **Run 3 v5** — CANCELED at 48 min SCHEDULING (HF Jobs queue saturation, Kanan2005 a100-large). 4B GRPO is now an explicit "future work" item in `blog.md` §7b
-- ✅ **Run 4 eval** — DONE in 7.8 min, JSON in `outputs/run_artifacts/1.7B-KL/evals/`, plots 06+07 regenerated
-- ✅ Docs reconciled: STATUS.md / blog.md / README.md / trace_demo.md all tell the same KL-anchor-wins story with Run 3 logged as future work
+- 🟡 **Run 4 weights mirror to `anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2`** is still uploading in the background (~3.4 GB safetensors). **Not blocking submission** — judges have a fallback path via the model-card snippet pointing at `2022uec1542/clarify-rl-grpo-qwen3-1-7b` which is fully public, and the demo Space already streams from upstream so the live chat tab works today regardless of mirror state.
+- ✅ Submission lap CLOSED: 3 trained runs evaluated, 4B base eval as ceiling, all plots regenerated, all docs reconciled, Wild Card #5 + Judges-60s-Tour + plot captions live on README and env Space.
+- ✅ All 25 logged-out submission URLs → HTTP 200/302
+- ✅ Env Space `/health` + `/reset` → real OpenEnv structured responses
 
 ## Decision dial: scoreboard of expected vs actual
 
@@ -73,11 +69,11 @@ HF Space: <https://huggingface.co/spaces/agarwalanu3103/clarify-rl> — LIVE, 64
 
 ## Next step (default if user just says "continue")
 
-1. ✅ Run 3 cancellation decision MADE — narrative locked at 3 trained runs (Run 1 / Run 2 / Run 4) + 4B base eval as ceiling
-2. ✅ Final sanity pass on blog.md + README.md done — Run 3 placeholders dropped, 3-trained-run scoreboard clean
-3. ✅ Plots already match (no Run 3 stub — `runs_summary.json` only has 7 evaluated rows; `compare_runs.py` skips missing `outputs/run_artifacts/4B/evals/`)
-4. ✅ STATUS.md ↔ blog.md ↔ README.md ↔ trace_demo.md cross-checked — no leftover "scheduling" or "in progress" Run 3 references in user-facing copy
-5. **NEXT: submit `docs/blog.md` to HF blog post format** + push final commit
+1. ✅ All P0/P1 hackathon gates GREEN — auto-validator + Themes & Judging Criteria + FAQ + Help Guide cross-checked
+2. ✅ Final docs reconciled — README, env Space README, slides, blog, model cards all synced
+3. ✅ Logged-out smoke test of 25 URLs + Env Space functional smoke both PASSED
+4. **NEXT (optional polish before 5 PM IST)**: (a) capture an `assets/demo_chat_screenshot.png` from the demo Space "Live chat" tab and embed it in README — improves "Storytelling" 30% gate; (b) confirm Run 4 mirror upload finished (`hf_hub_url` returns 200 on `model.safetensors`) and remove the fallback note from the model card; (c) submit through the official Discord submission form once the form opens.
+5. **HARD STOP**: Apr 26, 2026, 5:00 PM IST.
 
 ## Open questions / blockers
 
@@ -104,6 +100,6 @@ HF Space: <https://huggingface.co/spaces/agarwalanu3103/clarify-rl> — LIVE, 64
 - 5 families: coding / medical-intake / support-triage / meeting / event
 - Stack: OpenEnv 0.2.2 + MCPEnvironment + TRL GRPO ≥1.0 + Qwen3 family (0.6B / 1.7B / 4B)
 - Compute: HF Jobs, 3 successful trained runs + 1 base eval across 3 accounts; spend ≈ Run-1 $1.08 + Run-2 $2.21 + Run-3 v3 (OOM) $0.40 + Run-3 v5 (canceled in queue, $0.00) + Run-4 $1.80 + 4B base eval $0.13 + Run-4 eval $0.20 = **~$5.8 of $120 budget**
-- Submission format: HF blog post (markdown)
+- Submission format: HF blog post (markdown) + GitHub repo + env Space + demo Space + W&B project + Colab notebook
 - MCP tools: `ask_question`, `propose_plan`, `get_task_info`
-- Deadline: Apr 26, 2026, 5:00 PM IST (~15.5 hours from now)
+- Deadline: Apr 26, 2026, 5:00 PM IST (~12.5 hours from this update)
