@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-04-25 14:50 IST — Cascade (Windsurf) — Phase 4: deploy + baseline eval
+
+- **inference.py rewritten** to submission format: OpenAI client, WebSocket env communication, `[START]/[STEP]/[END]` structured logs, `BASELINE_MODE=policy/hybrid/llm`, policy fallback
+- **HF Space deployed**: `agarwalanu3103/clarify-rl` — Docker build, `/health` + `/reset` verified live
+- Fixed Dockerfile (removed lockfile dependency), added `.dockerignore`, `SUBMISSION_CHECKLIST.md`, `truststore` SSL fix
+- **Policy baseline ran**: all 3 tasks (easy/medium/hard) complete end-to-end, scores 0.00 (expected — empty plan). Per-question rewards confirmed (0.02-0.05)
+- `pyproject.toml` updated: added `openai`, `websockets` deps
+- Decisions locked this session: HF Space account = `agarwalanu3103`; inference uses OpenAI client (not huggingface_hub)
+- **Next**: run hybrid/LLM baseline with HF credits, then start GRPO training
+
+---
+
 ## 2026-04-25 15:30 IST — Cascade (Windsurf) — gap analysis + regression tests
 
 - Full gap analysis: cross-referenced specs 03/04/05 against all implementation code

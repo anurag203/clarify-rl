@@ -2,54 +2,47 @@
 
 > **Update this file at the END of every session.** Keep it short (≤ 80 lines). For history, see `SESSION_LOG.md`.
 
-**Last updated**: 2026-04-25 15:30 IST — Cascade (Windsurf), gap analysis + regression tests session
+**Last updated**: 2026-04-25 14:50 IST — Cascade (Windsurf), Phase 4 deploy + baseline eval
 
 ## Current phase
 
-**Phase 3.7 — Core env hardened with tests. Ready for Phase 4 (deploy + baseline eval).**
+**Phase 4.5 — HF Space live, policy baseline confirmed. Ready for LLM baseline + training.**
 
-Hackathon timeline: inside 48-hour build window. Phases 1-3 complete. Env hardened with episode-done guard, 200-char cap, 48 unit tests (all green). Next: push to HF Space, inference.py, eval set.
+HF Space: https://huggingface.co/spaces/agarwalanu3103/clarify-rl (RUNNING, Docker, /health OK)
 
 ## Last completed
 
-- Full gap analysis: spec 03/04/05 cross-referenced against implementation code
-- **Fix**: `_guard_episode_done()` — blocks tool calls after episode ends (was unguarded)
-- **Fix**: `ask_question` now truncates to 200 chars (spec 03 requirement)
-- **Fix**: `05-scenario-design.md` difficulty table synced with code (medium=4-5, hard=6-7)
-- **Fix**: `__init__.py` made import-safe (try/except) so tests run without openenv
-- **Tests**: 4 test modules (48 unit tests all green):
-  - `test_scenarios.py` — generation, reproducibility, field coverage, required keys, difficulty ranges
-  - `test_grader.py` — parse_plan, ask_question_reward, reward magnitudes
-  - `test_user_simulator.py` — keyword coverage, field matching, all-family reachability
-  - `test_environment.py` — integration tests (marked `@integration`, need openenv to run)
-  - `test_rubrics.py` — rubric components + composition (marked `@integration`)
-- **Verified**: every TASK_FIELDS key has matching FIELD_KEYWORDS entry (all 5 families)
-- pytest config added to `pyproject.toml` (importlib mode, integration marker)
+- `inference.py` rewritten to submission format (OpenAI client, WebSocket, structured logs, 3 modes)
+- HF Space deployed to `agarwalanu3103/clarify-rl` — Docker build successful, `/health` + `/reset` verified
+- Policy baseline ran: all 3 tasks end-to-end, per-question rewards confirmed (0.02-0.05)
+- `scenarios/eval_held_out.json` generated (300 scenarios, seeds 10000-10099)
+- `.dockerignore`, `SUBMISSION_CHECKLIST.md` added
+- `pyproject.toml`: `openai`, `websockets`, `huggingface_hub` deps added
 
 ## In progress
 
-- Nothing actively coding — ready for Phase 4
+- Nothing actively coding
 
 ## Next step (default if user just says "continue")
 
-1. Push to HF Space, verify public access incognito
-2. Write `inference.py` — baseline eval (Qwen2.5-1.5B-Instruct via HF Inference API)
-3. Generate `scenarios/eval_held_out.json` (frozen seeds 10000-10099)
-4. Fork `openenv_wordle_grpo.ipynb` → `training/train_grpo.ipynb`
-5. First real training run (100 GRPO steps on Colab T4)
+1. Run hybrid baseline with LLM (HF_TOKEN + Qwen2.5-1.5B-Instruct)
+2. Fork `openenv_wordle_grpo.ipynb` → `training/train_grpo.ipynb`
+3. First real training run (100 GRPO steps on Colab T4 or HF Jobs)
+4. Evaluate trained model vs baseline
 
 ## Open questions / blockers
 
-- None as of last update.
+- Policy scores 0.00 because it submits empty plan — expected, LLM baseline will be meaningful
+- SSL cert issue on local macOS (fixed with `truststore`); not an issue in Docker/HF Space
 
 ## Files most recently touched
 
-- `server/clarify_environment.py` — `_guard_episode_done()`, 200-char cap
-- `__init__.py` — import-safe try/except
-- `docs/05-scenario-design.md` — difficulty table synced
-- `tests/test_scenarios.py`, `test_grader.py`, `test_user_simulator.py`, `test_rubrics.py`, `test_environment.py` — created
-- `tests/conftest.py`, `conftest.py` — pytest config
-- `pyproject.toml` — pytest ini_options
+- `inference.py` — complete rewrite (OpenAI client, WS, structured logs)
+- `Dockerfile` — simplified (single-step install, no lockfile)
+- `.dockerignore`, `SUBMISSION_CHECKLIST.md` — created
+- `pyproject.toml` — added openai, websockets deps
+- `scripts/generate_eval_set.py` — created
+- `scenarios/eval_held_out.json` — generated
 
 ## Locked decisions (mirror of `.windsurf/rules/clarify-rl.md` — do NOT pivot)
 
