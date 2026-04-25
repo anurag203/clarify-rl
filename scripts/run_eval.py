@@ -139,7 +139,12 @@ async def _eval_one_scenario(
         {"role": "system", "content": inf.SYSTEM_PROMPT},
         {"role": "user", "content": (
             f"USER REQUEST:\n{request_text}\n\nYou have {max_steps} steps. "
-            "Available tools: ask_question(question), propose_plan(plan), get_task_info()."
+            "Available tools: ask_question(question), propose_plan(plan), get_task_info().\n\n"
+            "RESPONSE FORMAT: Reply with ONE function call only, no other text.\n"
+            "Examples:\n"
+            "  ask_question(\"What is the date?\")\n"
+            "  propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\"}')\n"
+            "  get_task_info()\n"
         )},
     ]
 
@@ -191,15 +196,19 @@ async def _eval_one_scenario(
         }
         trace.append(record)
 
+        format_reminder = (
+            "\n\nReminder: Reply with ONE function call only "
+            "(ask_question/propose_plan/get_task_info), no other text."
+        )
         if tool_name == "ask_question":
             questions_asked += 1
             if isinstance(result, dict) and result.get("field_revealed"):
                 fld = result["field_revealed"]
                 ans = result.get("answer", "")
                 revealed[fld] = ans
-            messages.append({"role": "user", "content": json.dumps(result)})
+            messages.append({"role": "user", "content": json.dumps(result) + format_reminder})
         elif tool_name == "get_task_info":
-            messages.append({"role": "user", "content": json.dumps(result)})
+            messages.append({"role": "user", "content": json.dumps(result) + format_reminder})
         elif tool_name == "propose_plan":
             if isinstance(result, dict):
                 final_score = float(result.get("score", step_resp.get("reward", 0.0)))
