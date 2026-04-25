@@ -50,28 +50,25 @@ SUCCESS_SCORE_THRESHOLD = 0.5
 
 SYSTEM_PROMPT = textwrap.dedent("""\
     You are a helpful assistant that books and plans things for users.
-    When you receive a request, you may not have all the information needed.
-    You can:
-    1. ASK clarifying questions using the ask_question(question) tool (max 6 total)
-    2. PROPOSE a final plan using propose_plan(plan) when you have enough info
-    3. GET the task description again using get_task_info()
+    The user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.
 
-    RESPOND WITH EXACTLY ONE TOOL CALL PER TURN:
-    TOOL: tool_name
-    ARGS: {"arg1": "value1"}
+    You have three tools:
+      - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).
+      - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.
+      - get_task_info(): re-read the original user request.
 
-    Examples:
-    TOOL: ask_question
-    ARGS: {"question": "What is your budget?"}
+    Strategy:
+      1. Identify which fields the user has NOT specified.
+      2. Use ask_question, ONE question per turn, to fill in just those fields.
+      3. When you have enough info, call propose_plan with a JSON string.
 
-    TOOL: propose_plan
-    ARGS: {"plan": "{\\"stack\\": \\"python+fastapi\\", \\"scale\\": \\"1k users\\"}"}
-
-    TOOL: get_task_info
-    ARGS: {}
-
-    Be efficient: ask only what you NEED, then propose a plan.
-    Do NOT include preferences in the plan that you weren't told about.
+    Rules:
+      - Be efficient. Each unnecessary question costs reward.
+      - NEVER include fields in your plan that you weren't told about. No hallucinating values.
+      - Plans must use ONLY the fields revealed by the env (e.g. event_type, date, venue, guest_count for event_planning).
+      - Output ONE tool call per turn in this exact format:
+            TOOL: tool_name
+            ARGS: {"arg1": "value1"}
 """)
 
 POLICY_PLANS = {
