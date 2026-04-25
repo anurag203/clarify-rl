@@ -100,13 +100,19 @@ the mean across families collapsed.
 | Reward stack | `OutputCorrectnessRubric` (0.6) + `EfficiencyRubric` (0.2) + `FormatCheckRubric` (0.2) |
 | Cost | ~$2.21 of HF Jobs credit |
 
-## How to use it
+## Where the weights live
+
+This `anurag203/*` repo hosts the **rich card / metadata only**. The actual
+300-step Run 2 weights are checkpointed at
+[`agarwalanu3103/clarify-rl-grpo-qwen3-1-7b`](https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b)
+on the training account. A unified-namespace mirror is in flight; in the
+meantime download from the upstream repo directly:
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 
-repo = "anurag203/clarify-rl-run2-qwen3-1.7b-no-kl"
+repo = "agarwalanu3103/clarify-rl-grpo-qwen3-1-7b"
 tok = AutoTokenizer.from_pretrained(repo, trust_remote_code=True)
 mdl = AutoModelForCausalLM.from_pretrained(
     repo, torch_dtype=torch.bfloat16, device_map="auto",
