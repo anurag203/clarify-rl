@@ -112,6 +112,20 @@ def create_client() -> Optional[OpenAI]:
         return None
 
 
+_PREFIX_TO_TOOL = {
+    "ASK": "ask_question",
+    "ASK_QUESTION": "ask_question",
+    "QUESTION": "ask_question",
+    "Q": "ask_question",
+    "PROPOSE": "propose_plan",
+    "PROPOSE_PLAN": "propose_plan",
+    "PLAN": "propose_plan",
+    "INFO": "get_task_info",
+    "GET_TASK_INFO": "get_task_info",
+    "TASK_INFO": "get_task_info",
+}
+
+
 def parse_tool_call(response_text: str) -> tuple[Optional[str], dict]:
     cleaned = _strip_reasoning(response_text)
     tool_match = re.search(r"TOOL:\s*(\w+)", cleaned, re.IGNORECASE)
@@ -135,6 +149,10 @@ def parse_tool_call(response_text: str) -> tuple[Optional[str], dict]:
             args = _parse_positional_args(tool_name, raw_body.strip())
             return tool_name, args
 
+    prefix_tool, prefix_args = _parse_prefixed_call(cleaned)
+    if prefix_tool:
+        return prefix_tool, prefix_args
+
     action_match = re.search(
         r'Action:\s*(\w+)\((?:(\w+)\s*=\s*["\'](.+?)["\']|([^)]*))\)',
         cleaned, re.DOTALL,
@@ -152,6 +170,53 @@ def parse_tool_call(response_text: str) -> tuple[Optional[str], dict]:
                 return tool_name, {k.strip(): v.strip().strip("\"'")}
             return tool_name, {}
 
+    return None, {}
+
+
+def _parse_prefixed_call(text: str) -> tuple[Optional[str], dict]:
+    """Handle Qwen3 GRPO outputs like:
+        ASK: {"question": "What is the budget?"}
+        ASK: What is the budget?
+        PROPOSE: {"date": "2024-12-25", ...}
+        Q: What is the budget?
+
+    The 0.6B GRPO checkpoint emits these ~20% of the time. We map the
+    prefix to the canonical tool name and parse the rest as either a JSON
+    object or a free-form question/plan string.
+    """
+    match = re.match(r"^\s*([A-Za-z_]+)\s*:\s*(.*)$", text, flags=re.DOTALL)
+    if not match:
+        return None, {}
+    prefix = match.group(1).upper().replace("-", "_")
+    if prefix not in _PREFIX_TO_TOOL:
+        return None, {}
+    tool_name = _PREFIX_TO_TOOL[prefix]
+    rest = match.group(2).strip()
+
+    if rest.startswith("{"):
+        parsed = _load_json_like(rest)
+        if isinstance(parsed, dict) and parsed:
+            if tool_name == "ask_question":
+                question = parsed.get("question") or parsed.get("q") or parsed.get("text")
+                if isinstance(question, str):
+                    return tool_name, {"question": question}
+                return tool_name, {"question": json.dumps(parsed)}
+            if tool_name == "propose_plan":
+                inner = parsed.get("plan") if isinstance(parsed.get("plan"), (dict, str)) else None
+                if inner is not None:
+                    plan_str = inner if isinstance(inner, str) else json.dumps(inner)
+                    return tool_name, {"plan": plan_str}
+                return tool_name, {"plan": json.dumps(parsed)}
+            return tool_name, {}
+
+    if tool_name == "ask_question":
+        question = rest.strip().strip('"').strip("'")
+        if question:
+            return tool_name, {"question": question}
+    if tool_name == "propose_plan" and rest:
+        return tool_name, {"plan": rest}
+    if tool_name == "get_task_info":
+        return tool_name, {}
     return None, {}
 
 
