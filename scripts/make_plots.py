@@ -418,7 +418,8 @@ def main() -> None:
         if "=" not in spec:
             print(f"[warn] --eval expects LABEL=PATH, got {spec!r}; skipping")
             continue
-        label, _, path = spec.partition("=")
+        # rpartition: labels may legitimately contain '=' (e.g. "Run X, beta=0")
+        label, _, path = spec.rpartition("=")
         label = label.strip()
         path = path.strip()
         loaded = _load_json(path)
@@ -431,7 +432,12 @@ def main() -> None:
     elif args.log_history:
         labelled: dict[str, list] = {}
         for spec in args.log_history:
-            label, _, path = spec.partition("=")
+            # Use rpartition so labels can contain '=' (e.g. "Run X, beta=0").
+            # Path is always the trailing token after the LAST '='.
+            label, sep, path = spec.rpartition("=")
+            if not sep:
+                # Fallback: no '=' at all → treat the whole thing as a path
+                label, path = path, label
             data = _load_json(path.strip())
             if data is not None:
                 labelled[label.strip()] = data

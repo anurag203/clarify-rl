@@ -13,16 +13,16 @@ from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservatio
 from server.clarify_environment import ClarifyEnvironment
 
 
-# max_concurrent_envs=8 supports up to 4 parallel training jobs simultaneously
-# (each job uses 2 sessions for num_generations=2 rollouts, +margin). Each
-# session gets a fresh ClarifyEnvironment instance — see SUPPORTS_CONCURRENT_SESSIONS
-# in clarify_environment.py for safety reasoning.
+# max_concurrent_envs=64: each ClarifyEnvironment is in-memory only (no GPU
+# / no shared state — see SUPPORTS_CONCURRENT_SESSIONS in clarify_environment.py),
+# so we can comfortably fan out to multiple parallel HF Jobs evals + lingering
+# orphan sessions from disconnected eval clients without hitting CAPACITY_REACHED.
 app = create_app(
     env=ClarifyEnvironment,
     action_cls=CallToolAction,
     observation_cls=CallToolObservation,
     env_name="clarify_rl",
-    max_concurrent_envs=8,
+    max_concurrent_envs=64,
 )
 
 

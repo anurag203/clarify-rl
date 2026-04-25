@@ -13,3 +13,5 @@ outputs/
 *.safetensors
 .ipynb_checkpoints/
 hackathon_data/
+wandb/
+.wandb/

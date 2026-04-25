@@ -4,6 +4,68 @@
 
 ---
 
+## 2026-04-25 23:55 IST — Cascade (Cursor) — Phase 9: TWO root-cause bugs found and fixed
+
+- **Run 2 launched** (Qwen3-1.7B / 400 steps / a100-large) — currently downloading deps + bootstrapping vLLM. Runs to completion in ~3h.
+- **Root cause #1 — parser couldn't parse what the trained model emits.** Trained 0.6B emits `function_call(arg="value")` form (e.g. `ask_question(question="What is your budget? (in USD)")`) — the OLD parser used a naive regex that broke on **nested parentheses** in the question text. Rewrote `parse_tool_call` with:
+  - `_find_balanced_func_call(text)`: walks the string with a paren+quote depth counter to extract `(name, body)` even when `body` contains `(...)` and JSON.
+  - `_parse_positional_args(...)`: handles `key="value"`, `key={json}`, and bare positional forms.
+  - `_parse_prefixed_call(...)`: NEW. Handles `ASK: {...}`, `PROPOSE: {...}`, `Q: text`, `PLAN: text` shapes that the trained 0.6B uses ~20% of the time.
+- **Root cause #2 — eval system prompt's example was being copied verbatim.** Old eval `SYSTEM_PROMPT` hard-coded `propose_plan(plan='{"stack": "python+fastapi", "scale": "1k users"}')` as an example. Inspected the Qwen3-1.7B base eval (n=50) — **50/50** scenarios produced exactly `{"stack": "python+fastapi", "scale": "1k users"}` for **event_planning** and **medical_intake** tasks. The base model literally just copied the system-prompt example. Aligned eval `SYSTEM_PROMPT` character-for-character with `train_grpo.py:PROMPT` so trained model has zero distribution shift between train and eval.
+- **Re-launch plan**: launched 3 fresh `n50_v3` evals (0.6B-base, 1.7B-base, 0.6B-trained) with the prompt-aligned, prefix-tolerant parser. These are the first FAIR measurements of the trained-vs-untrained gap.
+- **Pre-fix table is misleading** — the 0/50 scores reflect the eval bug, not the model's true behaviour. Trained 0.6B was scoring some non-zero rewards mid-trajectory (0.02–0.05 per question that revealed a field) before submitting a copied-example plan that scored 0. Post-fix numbers will be the headline.
+- **Files touched**: `inference.py` (new `_PREFIX_TO_TOOL` table, `_parse_prefixed_call`, `_find_balanced_func_call`, `_parse_positional_args`, aligned `SYSTEM_PROMPT`); `scripts/make_plots.py` (multi-run `--log-history`/`--eval` support); `scripts/poll_training.py` (new robust monitor with retry-on-empty); `scripts/refresh_all_plots.sh` (new orchestrator).
+
+---
+
+## 2026-04-25 23:25 IST — Cascade (Cursor) — Phase 8: run 1 evaluated end-to-end
+
+- **Run 1 finished**: Qwen3-0.6B / 300 steps / a100-large / 38 min wall / pushed `agarwalanu3103/clarify-rl-grpo-qwen3-0-6b` to Hub. Reward grew **7×** (0.006 → 0.045) over 300 steps — pipeline working.
+- **HF Inference Router refuses fine-tuned uploads** (`model_not_supported` 400). Built `scripts/eval_with_vllm.py` + `scripts/launch_eval_job.sh` to host vLLM ourselves inside an HF Job (snapshot-downloads the project Space for `inference.py` + scenarios; runs `scripts/run_eval.py` against local vLLM; uploads results to model repo's `evals/` folder).
+- **Qwen3 `<think>` token-waste fix**: trained model burned full 300-token budget inside `<think>` blocks during eval, never reaching TOOL/ARGS. Patched `inference.py` to pass `extra_body={"chat_template_kwargs": {"enable_thinking": False}}` (matches train_grpo.py) and bumped `MAX_TOKENS=800`. Eval runtime dropped from never-completes → 33.6s for 50 scenarios.
+- **Headline numbers (run 1)**: trained avg=0.00 / format_pass=0% / 0 winners on 50 held-out, but avg-questions dropped to **3.32** (vs 5.06 for Qwen3-8B base, 5.87 for Qwen3-4B-Instruct, 4.0 for random policy). All untrained models also fail FormatCheck (best: 4B-Instruct 2/30 with max=0.81).
+- **Failure mode identified**: trained 0.6B submits empty `{}` plans or wrong-family schemas (`{"stack": ..., "scale": ...}` for an event_planning task). The family→required-keys mapping wasn't learned in 300 steps — needs more steps or a bigger base.
+- **All 5 plots generated** from real run-1 data (`plots/01_..._05_..png`). `docs/trace_demo_run1.md` written with 3 illustrative scenarios. `outputs/baselines.json` refreshed with comparative table. Total spend so far: **$1.08 of $120 budget**.
+- **Next**: instant Anurag pastes HF_TOKEN_2/3 + GitHub URL → launch runs 2/3 (1.7B + 4B) in parallel; the larger bases are expected to clear FormatCheck.
+
+---
+
+## 2026-04-25 22:00 IST — Cascade (Cursor) — Phase 7: smoke green + run 1 launched
+
+- **SMOKE TEST PASSED** (job `69ece82ad70108f37acde9b8`): Qwen3-0.6B / a10g-small / 5 steps / train_loss=-0.099 / 67s wall / model + Trackio bucket saved cleanly
+- Resolved a 7-issue dependency cascade discovered by the smoke test (in chronological order):
+  1. `vllm_ascend` — TRL unconditionally imports it on CUDA → monkey-patch `importlib.util.find_spec` to return None
+  2. `mergekit` — TRL <1.0 eagerly imports it; pinned `trl[vllm]>=1.0` in launcher to drop dependency entirely (mergekit also has incompatible pydantic constraints with vllm 0.10.2+)
+  3. `llm_blender` — TRL eagerly imports; `llm_blender` itself imports `TRANSFORMERS_CACHE` (removed in transformers 5.x). Solution: stub via `sys.modules` + `_BLOCKED_PACKAGES` extension
+  4. `peft` — TRL callbacks need PeftModel; added explicit `--with peft`
+  5. `transformers 5.x compatibility` — keeping `git+https://...transformers@main` for vllm 0.17 + trl 1.0 cohabitation
+  6. `chat_template_kwargs` only exists in trl >= 1.0 — added `trl[vllm]>=1.0` pin AND defensive `_grpo_kwargs` filter via `dataclasses.fields(GRPOConfig)` so we survive future TRL upgrades
+  7. Old `llm_blender.__spec__ is None` — extended monkey-patch to override `transformers.utils.import_utils._is_package_available` for blocked packages
+- **Defensive `GRPOConfig` init**: `_grpo_kwargs` dict + filter against installed TRL's dataclass fields → drops unsupported kwargs with a warning instead of crashing
+- **macOS truststore**: patched `.venv/bin/hf` entry-point to inject `truststore.inject_into_ssl()` for corporate proxy SSL (was blocking `hf jobs logs`)
+- **Production run 1 launched**: Qwen3-0.6B / a100-large / 300 steps (job `69ece976d2c8bd8662bcdf48`) on account 1 (`agarwalanu3103`); ETA ~50 min wall, ~$2.50
+- **`docs/ANURAG_TODO.md` rewritten**: clean GUI-vs-terminal split for the user — they need to (A) provide HF tokens for accounts 2+3, (B) click Qwen3 license accept, (C) create a GitHub repo, (D) flip model cards to public after training. I handle everything else.
+- **Decisions locked this session**: TRL pinned `>=1.0` (drops mergekit need); flavor matrix updated to a100-large for 0.6B+1.7B and h200 for 4B; compute strategy unchanged (3 parallel runs, ~$20 projected)
+- **Next**: monitor run 1 logs; await user to paste HF tokens 2+3 + GitHub URL; launch runs 2+3 + bake baseline evals while runs train
+
+---
+
+## 2026-04-25 20:30 IST — Cascade (Cursor) — Phase 6: budget-unlocked rewrite
+
+- User confirmed **full $120 HF Jobs budget is available** — strategy switched from "save money" to "buy reliability + quality"
+- **Root-cause fix for `0.000000` loss pathology**: `NUM_GENERATIONS=2` produces zero advantage when both rollouts agree on tokens (common early in training). Bumped default to auto-tune by GPU tier: 4/8/8 for 24GB/40GB/80GB.
+- **vllm_gpu_memory_utilization**: raised from flat 0.40 → 0.55 on 40+ GB tiers. Was leaving half of A100/H100 idle.
+- **`training/train_grpo.py` upgrades**: SMOKE_TEST mode, OOM trap, RESUME_FROM_CKPT, auto-resume from existing checkpoints, FAILED marker
+- **New scripts**: `scripts/launch_all.sh` (parallel multi-account launcher), `scripts/preflight.sh` (concurrent WS probe), `scripts/run_post_train_eval.sh` (post-training eval orchestrator)
+- **Server change**: `SUPPORTS_CONCURRENT_SESSIONS=True` + `max_concurrent_envs=8` — enables 3-4 parallel HF Jobs against one Space
+- **Compute plan locked**: 0.6B/a10g-large/500 + 1.7B/a100-large/400 + 4B/h100-large/250, ~$70 total; optional $25 insurance run on 1.7B seed=84
+- **Llama / Qwen2.5-Instruct rejected** — chat template fails TRL `add_response_schema`; not retesting under time pressure
+- **Tokens received**: agarwalanu3103, Kanan, mnit (3 accounts) — held in env vars only, not committed
+- **Doc updates**: `docs/11-submission-plan.md` rewritten with phased rollout, `docs/blog.md` skeleton drafted with `<PLACEHOLDER>` for post-eval numbers, `README.md` refreshed with Colab badge + plot embeds + model card links
+- **Next**: Anurag pushes server/ to Space (~5 min), runs preflight, runs smoke ($0.50), then launch_all.sh fires production runs
+
+---
+
 ## 2026-04-25 14:50 IST — Cascade (Windsurf) — Phase 4: deploy + baseline eval
 
 - **inference.py rewritten** to submission format: OpenAI client, WebSocket env communication, `[START]/[STEP]/[END]` structured logs, `BASELINE_MODE=policy/hybrid/llm`, policy fallback

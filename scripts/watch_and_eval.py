@@ -55,8 +55,9 @@ class TrainingRun:
 # manually so we don't accidentally fire evals against stale entries.
 RUNS: list[TrainingRun] = [
     TrainingRun(
+        # Run 3 v5 (after v3 OOM-died at step 1 with default num_gen=4)
         run_id="run3",
-        job_id="69ed1f5ad70108f37acdeed9",
+        job_id="69ed2569d2c8bd8662bce61a",
         repo="Kanan2005/clarify-rl-grpo-qwen3-4b",
         token_env="HF_TOKEN_KANAN",
         eval_flavor="a100-large",       # 4B fp16 ≈ 8 GB weights, fits easily

@@ -40,35 +40,34 @@ BASELINE_MODE = os.getenv("BASELINE_MODE", "hybrid").lower()
 ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:8000")
 
 TEMPERATURE = 0.7
-MAX_TOKENS = 300
+# Qwen3 with enable_thinking=False usually fits in <200 tokens; we leave 800
+# as a safety margin in case any backend still emits a <think> block (e.g. if
+# `chat_template_kwargs` is silently dropped by an OpenAI-style proxy that
+# doesn't forward `extra_body` to vLLM).
+MAX_TOKENS = int(os.getenv("MAX_TOKENS", "800"))
 MAX_LLM_STEPS_PER_TASK = int(os.getenv("MAX_LLM_STEPS_PER_TASK", "8"))
 SUCCESS_SCORE_THRESHOLD = 0.5
 
-SYSTEM_PROMPT = textwrap.dedent("""\
-    You are a helpful assistant that books and plans things for users.
-    When you receive a request, you may not have all the information needed.
-    You can:
-    1. ASK clarifying questions using the ask_question(question) tool (max 6 total)
-    2. PROPOSE a final plan using propose_plan(plan) when you have enough info
-    3. GET the task description again using get_task_info()
-
-    RESPOND WITH EXACTLY ONE TOOL CALL PER TURN:
-    TOOL: tool_name
-    ARGS: {"arg1": "value1"}
-
-    Examples:
-    TOOL: ask_question
-    ARGS: {"question": "What is your budget?"}
-
-    TOOL: propose_plan
-    ARGS: {"plan": "{\\"stack\\": \\"python+fastapi\\", \\"scale\\": \\"1k users\\"}"}
-
-    TOOL: get_task_info
-    ARGS: {}
-
-    Be efficient: ask only what you NEED, then propose a plan.
-    Do NOT include preferences in the plan that you weren't told about.
-""")
+SYSTEM_PROMPT = (
+    "You are a helpful assistant that books and plans things for users.\n"
+    "The user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.\n"
+    "\n"
+    "You have three tools:\n"
+    "  - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).\n"
+    "  - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.\n"
+    "  - get_task_info(): re-read the original user request.\n"
+    "\n"
+    "Strategy:\n"
+    "  1. Identify which fields the user has NOT specified.\n"
+    "  2. Use ask_question, ONE question per turn, to fill in just those fields.\n"
+    "  3. When you have enough info, call propose_plan with a JSON string.\n"
+    "\n"
+    "Rules:\n"
+    "  - Be efficient. Each unnecessary question costs reward.\n"
+    "  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n"
+    "  - The `plan` argument MUST be a JSON STRING (not a dict). "
+    "Example: propose_plan(plan='{\"start_time\": \"2pm\", \"duration\": \"30min\"}').\n"
+)
 
 POLICY_PLANS = {
     "easy": [
@@ -108,6 +107,20 @@ def create_client() -> Optional[OpenAI]:
         return None
 
 
+_PREFIX_TO_TOOL = {
+    "ASK": "ask_question",
+    "ASK_QUESTION": "ask_question",
+    "QUESTION": "ask_question",
+    "Q": "ask_question",
+    "PROPOSE": "propose_plan",
+    "PROPOSE_PLAN": "propose_plan",
+    "PLAN": "propose_plan",
+    "INFO": "get_task_info",
+    "GET_TASK_INFO": "get_task_info",
+    "TASK_INFO": "get_task_info",
+}
+
+
 def parse_tool_call(response_text: str) -> tuple[Optional[str], dict]:
     cleaned = _strip_reasoning(response_text)
     tool_match = re.search(r"TOOL:\s*(\w+)", cleaned, re.IGNORECASE)
@@ -124,13 +137,16 @@ def parse_tool_call(response_text: str) -> tuple[Optional[str], dict]:
     if json_tool_name:
         return json_tool_name, json_tool_args
 
-    func_match = re.search(r"(\w+)\s*\(([^)]*)\)", cleaned)
-    if func_match:
-        tool_name = func_match.group(1).strip()
+    fn_call = _find_balanced_func_call(cleaned)
+    if fn_call:
+        tool_name, raw_body = fn_call
         if tool_name in ("ask_question", "propose_plan", "get_task_info"):
-            raw_args_str = func_match.group(2).strip()
-            args = _parse_positional_args(tool_name, raw_args_str)
+            args = _parse_positional_args(tool_name, raw_body.strip())
             return tool_name, args
+
+    prefix_tool, prefix_args = _parse_prefixed_call(cleaned)
+    if prefix_tool:
+        return prefix_tool, prefix_args
 
     action_match = re.search(
         r'Action:\s*(\w+)\((?:(\w+)\s*=\s*["\'](.+?)["\']|([^)]*))\)',
@@ -149,6 +165,53 @@ def parse_tool_call(response_text: str) -> tuple[Optional[str], dict]:
                 return tool_name, {k.strip(): v.strip().strip("\"'")}
             return tool_name, {}
 
+    return None, {}
+
+
+def _parse_prefixed_call(text: str) -> tuple[Optional[str], dict]:
+    """Handle Qwen3 GRPO outputs like:
+        ASK: {"question": "What is the budget?"}
+        ASK: What is the budget?
+        PROPOSE: {"date": "2024-12-25", ...}
+        Q: What is the budget?
+
+    The 0.6B GRPO checkpoint emits these ~20% of the time. We map the
+    prefix to the canonical tool name and parse the rest as either a JSON
+    object or a free-form question/plan string.
+    """
+    match = re.match(r"^\s*([A-Za-z_]+)\s*:\s*(.*)$", text, flags=re.DOTALL)
+    if not match:
+        return None, {}
+    prefix = match.group(1).upper().replace("-", "_")
+    if prefix not in _PREFIX_TO_TOOL:
+        return None, {}
+    tool_name = _PREFIX_TO_TOOL[prefix]
+    rest = match.group(2).strip()
+
+    if rest.startswith("{"):
+        parsed = _load_json_like(rest)
+        if isinstance(parsed, dict) and parsed:
+            if tool_name == "ask_question":
+                question = parsed.get("question") or parsed.get("q") or parsed.get("text")
+                if isinstance(question, str):
+                    return tool_name, {"question": question}
+                return tool_name, {"question": json.dumps(parsed)}
+            if tool_name == "propose_plan":
+                inner = parsed.get("plan") if isinstance(parsed.get("plan"), (dict, str)) else None
+                if inner is not None:
+                    plan_str = inner if isinstance(inner, str) else json.dumps(inner)
+                    return tool_name, {"plan": plan_str}
+                return tool_name, {"plan": json.dumps(parsed)}
+            return tool_name, {}
+
+    if tool_name == "ask_question":
+        question = rest.strip().strip('"').strip("'")
+        if question:
+            return tool_name, {"question": question}
+    if tool_name == "propose_plan" and rest:
+        return tool_name, {"plan": rest}
+    if tool_name == "get_task_info":
+        return tool_name, {}
     return None, {}
 
 
@@ -265,20 +328,155 @@ def _parse_args_fallback(raw: str) -> dict:
     return args
 
 
+_TOOL_NAMES = ("ask_question", "propose_plan", "get_task_info")
+
+
+def _find_balanced_func_call(text: str) -> Optional[tuple[str, str]]:
+    """Find the first `tool_name(...)` call with balanced parens.
+
+    Returns (name, body) where body is the parenthesized content with the
+    outer parens stripped. Handles nested parens inside JSON plans and quoted
+    questions like `What is your budget? (in USD)`. None if no recognised
+    tool name is found.
+    """
+    for match in re.finditer(r"\b(\w+)\s*\(", text):
+        name = match.group(1)
+        if name not in _TOOL_NAMES:
+            continue
+        body_start = match.end()
+        depth = 1
+        in_str = False
+        quote_char = ""
+        escape = False
+        for index in range(body_start, len(text)):
+            char = text[index]
+            if escape:
+                escape = False
+                continue
+            if in_str:
+                if char == "\\":
+                    escape = True
+                elif char == quote_char:
+                    in_str = False
+                continue
+            if char in ("'", '"'):
+                in_str = True
+                quote_char = char
+                continue
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    return name, text[body_start:index]
+    return None
+
+
 def _parse_positional_args(tool_name: str, raw_args: str) -> dict:
+    """Parse the body of a `tool_name(...)` call.
+
+    Handles three syntaxes the trained Qwen3 models actually produce:
+      1. Single keyword arg with quoted value: `question="What is your budget?"`
+      2. Bare keyword arg (unquoted JSON-ish):   `plan={"event_type": "wedding"}`
+      3. Pure positional (legacy):                `What is your budget?`
+
+    The previous implementation just split on `,` and stripped end quotes,
+    which corrupted `question="..."` into a literal `question="...` string.
+    """
     if not raw_args:
         return {}
-    parts = [p.strip().strip("'\"") for p in raw_args.split(",")]
     arg_map = {
         "ask_question": ["question"],
         "propose_plan": ["plan"],
     }
     param_names = arg_map.get(tool_name, [])
-    args = {}
+
+    text = raw_args.strip()
+
+    kw_quoted = re.match(
+        r"^\s*(\w+)\s*=\s*(['\"])(.*)\2\s*$",
+        text,
+        flags=re.DOTALL,
+    )
+    if kw_quoted:
+        key = kw_quoted.group(1)
+        val = kw_quoted.group(3).replace('\\"', '"').replace("\\'", "'")
+        return {key: val}
+
+    kw_brace = re.match(r"^\s*(\w+)\s*=\s*(\{.*\})\s*$", text, flags=re.DOTALL)
+    if kw_brace:
+        return {kw_brace.group(1): kw_brace.group(2)}
+
+    if "=" in text and len(param_names) == 1:
+        key, _, val = text.partition("=")
+        key_clean = key.strip()
+        if key_clean and key_clean.isidentifier():
+            return {key_clean: val.strip().strip("'\"")}
+
+    quoted = re.match(r"""^\s*(['"])(.*)\1\s*$""", text, flags=re.DOTALL)
+    if quoted and param_names:
+        val = quoted.group(2).replace('\\"', '"').replace("\\'", "'")
+        return {param_names[0]: val}
+
+    if param_names and text.startswith("{") and text.endswith("}"):
+        return {param_names[0]: text}
+
+    parts = _split_top_level_commas(text)
+    args: dict = {}
     for i, part in enumerate(parts):
+        cleaned = part.strip().strip("'\"")
         if i < len(param_names):
-            args[param_names[i]] = part
+            args[param_names[i]] = cleaned
     return args
+
+
+def _split_top_level_commas(text: str) -> list[str]:
+    """Split on commas only when not inside quotes / brackets / braces."""
+    out: list[str] = []
+    depth_paren = 0
+    depth_brace = 0
+    depth_brack = 0
+    in_str = False
+    quote = ""
+    escape = False
+    buf: list[str] = []
+    for ch in text:
+        if escape:
+            buf.append(ch)
+            escape = False
+            continue
+        if in_str:
+            if ch == "\\":
+                escape = True
+            elif ch == quote:
+                in_str = False
+            buf.append(ch)
+            continue
+        if ch in ("'", '"'):
+            in_str = True
+            quote = ch
+            buf.append(ch)
+            continue
+        if ch == "(":
+            depth_paren += 1
+        elif ch == ")":
+            depth_paren -= 1
+        elif ch == "{":
+            depth_brace += 1
+        elif ch == "}":
+            depth_brace -= 1
+        elif ch == "[":
+            depth_brack += 1
+        elif ch == "]":
+            depth_brack -= 1
+        elif ch == "," and depth_paren == 0 and depth_brace == 0 and depth_brack == 0:
+            out.append("".join(buf))
+            buf = []
+            continue
+        buf.append(ch)
+    if buf:
+        out.append("".join(buf))
+    return out
 
 
 def _parse_result_field(obs: dict) -> str:
@@ -321,11 +519,20 @@ def _choose_action(
         return policy_action[0], policy_action[1], True, llm_attempts
 
     try:
+        # Qwen3 ships with reasoning ("<think>...</think>") enabled by default,
+        # which on a 300-token budget burns the entire reply inside <think> and
+        # never reaches the TOOL/ARGS block we parse. Training disables it via
+        # `chat_template_kwargs={"enable_thinking": False}` (see train_grpo.py),
+        # so eval must do the same to match the deployment contract. vLLM
+        # forwards `chat_template_kwargs` from `extra_body` straight into the
+        # tokenizer's apply_chat_template; backends that don't support it
+        # (HF Router) silently drop the field, so it's safe to always include.
         response = llm_client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
         assistant_msg = response.choices[0].message.content or ""
         llm_attempts += 1

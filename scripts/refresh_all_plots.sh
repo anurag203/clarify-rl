@@ -93,6 +93,7 @@ add_if outputs/run_artifacts/v4/evals/eval_qwen3-0.6b_n50_v4.json               
 add_if outputs/run_artifacts/v4/evals/eval_clarify-rl-grpo-qwen3-0-6b_n50_v4.json   "0.6B GRPO (Run 1)"
 add_if outputs/run_artifacts/v4/evals/eval_qwen3-1.7b_n50_v4.json                   "1.7B base"
 add_if outputs/run_artifacts/1.7B/evals/eval_clarify-rl-grpo-qwen3-1-7b_n50.json    "1.7B GRPO no-KL (Run 2)"
+add_if outputs/run_artifacts/4B-base/evals/eval_qwen3-4b_qwen3-4b-base_n50_v4.json  "4B base"
 # After Run 4 finishes its first eval, refresh_all_plots.sh will pick up the new
 # JSON automatically; until then it's silently skipped.
 for f in outputs/run_artifacts/1.7B-KL/evals/eval_*_n50_v4.json; do
@@ -101,7 +102,7 @@ done
 for f in outputs/run_artifacts/4B/evals/eval_*_n50_v4.json; do
     [ -f "$f" ] && add_if "$f" "4B GRPO (Run 3)"
 done
-add_if outputs/eval_qwen3-4b-instruct_n50_v4.json                                    "4B-instruct (ceiling)"
+add_if outputs/eval_qwen3-4b-instruct_n50_v4.json                                    "4B-instruct"
 
 LOG_FLAGS=()
 [ -f outputs/run1_artifacts/log_history.json ] && LOG_FLAGS+=(--log-history "0.6B GRPO (Run 1, beta=0)=outputs/run1_artifacts/log_history.json")
@@ -109,6 +110,11 @@ LOG_FLAGS=()
 [ -f outputs/run2_artifacts/log_history_partial.json ] && [ ! -f outputs/run_artifacts/1.7B/log_history.json ] && LOG_FLAGS+=(--log-history "1.7B GRPO (Run 2, in progress)=outputs/run2_artifacts/log_history_partial.json")
 [ -f outputs/run_artifacts/4B/log_history.json ] && LOG_FLAGS+=(--log-history "4B GRPO (Run 3, beta=0)=outputs/run_artifacts/4B/log_history.json")
 [ -f outputs/run_artifacts/1.7B-KL/log_history.json ] && LOG_FLAGS+=(--log-history "1.7B GRPO (Run 4, beta=0.2)=outputs/run_artifacts/1.7B-KL/log_history.json")
+# Until each run's final log_history.json is pushed to its repo, fall back to
+# the partial JSON that monitor_training scrapes from live job logs. This way
+# the reward curves stay current even mid-training.
+[ -f outputs/run4_artifacts/log_history_partial.json ] && [ ! -f outputs/run_artifacts/1.7B-KL/log_history.json ] && LOG_FLAGS+=(--log-history "1.7B GRPO (Run 4, beta=0.2 in-progress)=outputs/run4_artifacts/log_history_partial.json")
+[ -f outputs/run3_artifacts/log_history_partial.json ] && [ ! -f outputs/run_artifacts/4B/log_history.json ] && LOG_FLAGS+=(--log-history "4B GRPO (Run 3, beta=0 in-progress)=outputs/run3_artifacts/log_history_partial.json")
 
 echo
 echo "Running make_plots.py:"

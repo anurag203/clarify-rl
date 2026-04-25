@@ -87,13 +87,18 @@ RUN_SPECS: list[RunSpec] = [
         color="tab:green",
     ),
     RunSpec(
+        label="4B base",
+        eval_path=Path("outputs/run_artifacts/4B-base/evals"),
+        color="darkgray",
+    ),
+    RunSpec(
         label="4B GRPO (Run 3)",
         eval_path=Path("outputs/run_artifacts/4B/evals"),
-        base_label=None,
+        base_label="4B base",
         color="tab:purple",
     ),
     RunSpec(
-        label="4B-instruct (ceiling)",
+        label="4B-instruct",
         eval_path=Path("outputs/eval_qwen3-4b-instruct_n50_v4.json"),
         color="tab:red",
     ),
