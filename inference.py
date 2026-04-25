@@ -24,6 +24,11 @@ import textwrap
 import time
 from typing import Optional
 
+try:
+    import truststore; truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 from openai import OpenAI
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
@@ -403,13 +408,21 @@ async def ws_step(ws, tool_name: str, args: dict) -> dict:
 def wait_for_server(base_url: str, timeout: int = 120) -> bool:
     import urllib.request
     import urllib.error
+    import ssl
+
+    ctx = ssl.create_default_context()
+    try:
+        import certifi
+        ctx.load_verify_locations(certifi.where())
+    except ImportError:
+        pass
 
     urls = [f"{base_url}/health", f"{base_url}/"]
     deadline = time.time() + timeout
     while time.time() < deadline:
         for url in urls:
             try:
-                req = urllib.request.urlopen(url, timeout=5)
+                req = urllib.request.urlopen(url, timeout=5, context=ctx)
                 if req.status == 200:
                     return True
             except Exception:
