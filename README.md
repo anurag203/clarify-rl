@@ -18,6 +18,7 @@ Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026, Bangalore
 [![HF Space](https://img.shields.io/badge/HF%20Space-clarify--rl-blue)](https://huggingface.co/spaces/agarwalanu3103/clarify-rl)
 [![Demo](https://img.shields.io/badge/HF%20Space-Interactive%20Demo-success)](https://huggingface.co/spaces/anurag203/clarify-rl-demo)
 [![W&B dashboard](https://img.shields.io/badge/W%26B-3%20runs%20live-yellow)](https://wandb.ai/anuragagarwal203-cisco/clarify-rl)
+[![Run 4 model](https://img.shields.io/badge/HF%20Model-Run%204%20%CE%B2%3D0.2-ff6f00)](https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2)
 [![Blog post](https://img.shields.io/badge/Writeup-blog.md-orange)](docs/blog.md)
 
 ## Headline (v4 fair eval, n=50 held-out, all parser/prompt fixes applied)
@@ -59,9 +60,10 @@ Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026, Bangalore
 | Submission asset | Link |
 |---|---|
 | HF Space (env) | https://huggingface.co/spaces/agarwalanu3103/clarify-rl |
-| Trained model — Qwen3-0.6B (Run 1, **done**) | https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-0-6b |
-| Trained model — Qwen3-1.7B (Run 2, β=0, **done**) | https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b |
-| Trained model — Qwen3-1.7B (Run 4, β=0.2 KL anchor, **done**) | https://huggingface.co/2022uec1542/clarify-rl-grpo-qwen3-1-7b |
+| **⭐ Trained model — Qwen3-1.7B (Run 4, β=0.2 KL anchor, hero)** | **https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2** |
+| Trained model — Qwen3-1.7B (Run 2, β=0, ablation regression) | https://huggingface.co/anurag203/clarify-rl-run2-qwen3-1.7b-no-kl |
+| Trained model — Qwen3-0.6B (Run 1, weak-base baseline) | https://huggingface.co/anurag203/clarify-rl-run1-qwen3-0.6b-no-kl |
+| Model cards (rich, in-repo) | [`docs/model_cards/`](docs/model_cards/) |
 | Training notebook (Colab) | https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb |
 | Writeup (HF blog post) | [`docs/blog.md`](docs/blog.md) |
 | Trace demo | [`docs/trace_demo.md`](docs/trace_demo.md) |
