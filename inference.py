@@ -40,7 +40,11 @@ BASELINE_MODE = os.getenv("BASELINE_MODE", "hybrid").lower()
 ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:8000")
 
 TEMPERATURE = 0.7
-MAX_TOKENS = 300
+# Qwen3 with enable_thinking=False usually fits in <200 tokens; we leave 800
+# as a safety margin in case any backend still emits a <think> block (e.g. if
+# `chat_template_kwargs` is silently dropped by an OpenAI-style proxy that
+# doesn't forward `extra_body` to vLLM).
+MAX_TOKENS = int(os.getenv("MAX_TOKENS", "800"))
 MAX_LLM_STEPS_PER_TASK = int(os.getenv("MAX_LLM_STEPS_PER_TASK", "8"))
 SUCCESS_SCORE_THRESHOLD = 0.5
 
@@ -321,11 +325,20 @@ def _choose_action(
         return policy_action[0], policy_action[1], True, llm_attempts
 
     try:
+        # Qwen3 ships with reasoning ("<think>...</think>") enabled by default,
+        # which on a 300-token budget burns the entire reply inside <think> and
+        # never reaches the TOOL/ARGS block we parse. Training disables it via
+        # `chat_template_kwargs={"enable_thinking": False}` (see train_grpo.py),
+        # so eval must do the same to match the deployment contract. vLLM
+        # forwards `chat_template_kwargs` from `extra_body` straight into the
+        # tokenizer's apply_chat_template; backends that don't support it
+        # (HF Router) silently drop the field, so it's safe to always include.
         response = llm_client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
         assistant_msg = response.choices[0].message.content or ""
         llm_attempts += 1
