@@ -39,7 +39,12 @@ _INSTRUCTIONS = (
 
 
 class ClarifyEnvironment(MCPEnvironment):
-    SUPPORTS_CONCURRENT_SESSIONS = False
+    # All state is per-instance (`_scenario`, `_asked_field_keys`, `_public_state`,
+    # `_last_step_reward`). The grader/rubric/scenarios modules are pure functions
+    # of their inputs, so a fresh instance per WebSocket session is independent
+    # and safe. Required so multiple parallel HF Jobs runs (and TRL's
+    # num_generations > 1) do not contend on a single shared session slot.
+    SUPPORTS_CONCURRENT_SESSIONS = True
 
     def __init__(self, max_questions: int = 6) -> None:
         mcp_server = FastMCP("clarify_rl")
