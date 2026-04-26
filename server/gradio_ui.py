@@ -294,9 +294,15 @@ def _stat_chips_html() -> str:
         return ""
     data = json.loads(p.read_text())
     rows = data.get("rows", [])
-    best = max((r for r in rows if "GRPO" in r.get("label", "")), key=lambda r: r.get("avg_score", 0), default=None)
+    # GRPO runs after the rename are identified by "β=" in the label
+    # (Probe / Drift / Anchor / Restrain / Champion). Base / instruct
+    # rows do not carry a beta annotation.
+    def _is_grpo(r: dict) -> bool:
+        label = r.get("label", "")
+        return ("β=" in label) or ("\u03b2=" in label)
+    best = max((r for r in rows if _is_grpo(r)), key=lambda r: r.get("avg_score", 0), default=None)
     base = next((r for r in rows if r.get("label") == "1.7B base"), None)
-    n_runs = sum(1 for r in rows if "GRPO" in r.get("label", ""))
+    n_runs = sum(1 for r in rows if _is_grpo(r))
 
     def chip(value, label, color, glow):
         return (
@@ -773,23 +779,24 @@ def build_gradio_ui() -> gr.Blocks:
                         gr.Image(p, show_label=False)
 
         # ── Wire card clicks → switch underlying tab + flip active class ──
-        # Each handler returns (Tabs(selected=...), 4 button updates).
-        # Only the matching button gets `active`; others reset to base classes.
-        def _make_select(target: str):
-            def _fn():
-                return (
-                    gr.Tabs(selected=target),
-                    gr.update(elem_classes=_CARD_BASE_RESULTS + (["active"] if target == "results" else [])),
-                    gr.update(elem_classes=_CARD_BASE_WATCH   + (["active"] if target == "watch"   else [])),
-                    gr.update(elem_classes=_CARD_BASE_ENV     + (["active"] if target == "env"     else [])),
-                    gr.update(elem_classes=_CARD_BASE_PLOTS   + (["active"] if target == "plots"   else [])),
-                )
-            return _fn
+        # The card's `.active` glow is flipped INSTANTLY in the browser via
+        # the `js=` arg (zero round-trip). The Python callback only flips
+        # the underlying Gradio tab state via gr.Tabs(selected=...). This
+        # makes clicks feel native instead of waiting for the WS round-trip
+        # to return 4 elem_classes patches.
+        def _flip_js(target_class: str) -> str:
+            return (
+                "() => {"
+                "  document.querySelectorAll('.tab-card').forEach(c => c.classList.remove('active'));"
+                f"  const el = document.querySelector('.{target_class}');"
+                "  if (el) el.classList.add('active');"
+                "  return [];"
+                "}"
+            )
 
-        _outs = [tabs, btn_results, btn_watch, btn_env, btn_plots]
-        btn_results.click(fn=_make_select("results"), outputs=_outs)
-        btn_watch.click(  fn=_make_select("watch"),   outputs=_outs)
-        btn_env.click(    fn=_make_select("env"),     outputs=_outs)
-        btn_plots.click(  fn=_make_select("plots"),   outputs=_outs)
+        btn_results.click(fn=lambda: gr.Tabs(selected="results"), outputs=tabs, js=_flip_js("tab-card-results"))
+        btn_watch.click(  fn=lambda: gr.Tabs(selected="watch"),   outputs=tabs, js=_flip_js("tab-card-watch"))
+        btn_env.click(    fn=lambda: gr.Tabs(selected="env"),     outputs=tabs, js=_flip_js("tab-card-env"))
+        btn_plots.click(  fn=lambda: gr.Tabs(selected="plots"),   outputs=tabs, js=_flip_js("tab-card-plots"))
 
     return demo
