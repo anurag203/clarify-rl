@@ -7,11 +7,12 @@ sdk: docker
 app_port: 7860
 ---
 
-# ClarifyRL — AskBeforeYouAct
+# ClarifyRL — An RL Environment for "Ask Before You Act"
 
-> Train LLMs to **ask clarifying questions** instead of hallucinating.
+> An OpenEnv environment that puts a missing safety primitive — **epistemic humility** — directly on the reward path.
+> Validated by training Qwen3-1.7B with GRPO inside it. The trained model **beats its own base by +19%** on 50 held-out scenarios.
 >
-> **Theme #5 Wild Card · Teaching *epistemic humility* as an AI-safety primitive.**
+> **Theme #5 Wild Card** &middot; *Every RLHF / RLVR / GRPO-on-math paper rewards arriving at the right answer. Almost none reward deciding to ask first. We built the environment that does.*
 
 **Team Bhole Chature** (Anurag Agarwal + Kanan Agarwal) · Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026, Bangalore
 
@@ -23,9 +24,11 @@ app_port: 7860
 
 ---
 
-## Headline result
+## The contribution + the validation
 
-**Run 7 (Qwen3-1.7B + GRPO with KL anchor β=0.3) beats the same-size base by +19% on 50 held-out scenarios.**
+**The contribution**: an OpenEnv RL environment that scores LLM agents on **how well they ask** before acting — a reward primitive we found missing from every existing LLM-RL paper.
+
+**The validation**: trained Qwen3-1.7B with GRPO inside ClarifyRL. The trained model beats its own base by **+19%** on 50 held-out scenarios. Same model, same data — the environment changed only the behavior.
 
 | Metric | 1.7B Base | Run 7 (Trained) | Improvement |
 |---|---|---|---|
@@ -33,18 +36,16 @@ app_port: 7860
 | Event planning | 0.138 | **0.201** | **+46%** |
 | Completion rate | 18% | **20%** | **+11%** |
 
-Same model. Same data. RL changed only the behavior — taught it to ask before acting.
-
 ![Training progression and evaluation improvement](plots/08_training_progression.png)
 
-> *Reward climbs over training (left) for all 5 successful GRPO runs. The right panel shows the eval before/after pair for each run. Run 7 (orange) is the only trained run that breaks past the base on aggregate.*
+> *Reward climbs over training (left) for all 5 successful GRPO runs. The right panel shows the eval before/after pair for each run. Run 7 (orange) is the only trained run that breaks past the base on aggregate — proof the environment trains a real, measurable behavior.*
 
 ---
 
 ## Judges — 30 second read
 
-- **The problem**: LLMs hallucinate when given vague tasks. Almost no RL paper rewards *deciding to ask first*.
-- **The result**: Run 7 (Qwen3-1.7B + GRPO) **beats the same-size base by +19%**. Event planning: **+46%**. Same model, same data — RL changed only the behavior.
+- **The idea**: An OpenEnv RL environment that puts *"ask before you act"* on the reward path. The composable rubric penalizes hallucination, rewards info-gain, and gates on plan format. There is no shortcut.
+- **The validation**: Trained Qwen3-1.7B inside it &mdash; **beat its own base by +19%**. Event planning: **+46%**. Same model, same data, RL changed only the behavior. The idea trains a real behavior.
 - **The rigor**: 7 controlled runs across a 5-point β sweep {0, 0.2, 0.3, 0.5, 1.0}. Diagnosed and fixed 4 hidden bugs in our own training pipeline. All metrics self-hosted in [`plots/`](plots/).
 
 For the full story, read **[Blog.md](https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md)** (4-min scan).

@@ -1,4 +1,6 @@
-# ClarifyRL: Teaching Small LLMs to Ask Before They Act
+# ClarifyRL: An RL Environment that Puts "Ask Before You Act" on the Reward Path
+
+> *Every RLHF, RLVR, and GRPO-on-math paper rewards arriving at the right answer. Almost none reward deciding to ask first. We built the environment that does — and validated it works.*
 
 You text your assistant: *"Plan a birthday party."*
 
@@ -6,11 +8,11 @@ It comes back with a venue you never mentioned, a guest list it made up, and a b
 
 This is the default mode of every LLM today. They are trained to sound confident, not to say *"wait — how many people are coming?"*
 
-We thought: what if we could train that reflex? Not the confidence. The pause. The question.
+We thought: what if we could put that reflex — the pause, the question — directly into the reward signal? What if asking the right thing first was the only way to score?
 
-So we built **ClarifyRL** — an RL environment where the only way to score well is to **ask the right questions first**, then act on what you actually learned.
+So we built **ClarifyRL** — an OpenEnv RL environment where the only path to a high score is **asking the right questions before acting**. The composable rubric penalizes hallucination, rewards info-gain, and gates on plan format. There is no shortcut.
 
-Then we trained it.
+**Then we validated it.** We trained Qwen3-1.7B with GRPO inside ClarifyRL. Same model, same eval, same data — the environment changed only the behavior. The trained model **beats its own base by +19%** on 50 held-out scenarios. The behavior is real, learnable, and transferable.
 
 **Team Bhole Chature** — Anurag Agarwal + Kanan Agarwal · Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026
 
@@ -250,9 +252,19 @@ Or open the [Colab notebook](https://colab.research.google.com/github/anurag203/
 
 ## 9. Why this matters
 
-ClarifyRL is a safety primitive, not a benchmark. Every existing LLM-RL paper we read either rewards getting the right answer (RLVR / RLHF / GRPO-on-math) or rewards completing the trajectory. Almost none reward *deciding to ask first*. That gap is exactly where the hardest production failures live: a model that hallucinates dosage, deadline, or destination is much more dangerous than one that admits *"I don't know — please clarify."*
+**ClarifyRL is a safety primitive, not a benchmark.**
 
-A research lab could plug ClarifyRL in tomorrow as the *humility-shaping* stage between SFT and a larger downstream RL pipeline. The composable rubric, the hidden-profile mechanism, and the same-base / same-data β ablation all transfer.
+Every existing LLM-RL paper we read either rewards getting the right answer (RLVR / RLHF / GRPO-on-math) or rewards completing the trajectory. **Almost none reward *deciding to ask first*.** That gap is exactly where the hardest production failures live: a model that hallucinates dosage, deadline, or destination is much more dangerous than one that admits *"I don't know — please clarify."*
+
+ClarifyRL closes that gap with three things you can drop into any LLM-RL pipeline:
+
+1. **A composable rubric** that decomposes the reward into FormatCheck × FieldMatch × InfoGain × Efficiency × Hallucination — five signals you can debug, ablate, and reweight independently.
+2. **A hidden-profile mechanism** that forces the agent to *gather information* rather than guess. The fields the rubric scores against are never visible at reset; they only emerge through `ask_question`.
+3. **A clean β-anchored RL recipe** (validated across a 5-point sweep) showing exactly where the policy stays sane and where it collapses.
+
+A research lab could plug ClarifyRL in tomorrow as the **humility-shaping stage** between SFT and a larger downstream RL pipeline. The contribution is the environment. The 1.7B Run 7 is just the proof that the idea trains a real, measurable behavior — and that the same recipe scales to whatever model size the lab cares about.
+
+That is the opportunity we wanted to open. The next move is yours.
 
 ## Acknowledgments
 

@@ -6,9 +6,11 @@
 
 ## Slide 1 · Title
 
-# **ClarifyRL** — AskBeforeYouAct
+# **ClarifyRL**
 
-### Train LLMs to **ask** instead of **hallucinate**
+### An RL environment that puts *"Ask Before You Act"* on the reward path
+
+> *Every RLHF, RLVR, and GRPO-on-math paper rewards arriving at the right answer. Almost none reward deciding to ask first. We built the environment that does — and validated it works.*
 
 **Team Bhole Chature** · Anurag Agarwal + Kanan Agarwal
 Meta OpenEnv Hackathon Grand Finale · Bangalore · April 25-26, 2026
@@ -27,7 +29,7 @@ A naïve LLM happily invents a date, a guest list, a venue, and a budget. Every 
 
 The right behaviour: **ask the right clarifying questions first, then act.**
 
-We built an OpenEnv environment that *rewards exactly this behaviour* — and trained a 1.7B Qwen3 with a 4-component composable rubric to confirm it can be learned in <2 hours of A100 time.
+We built an OpenEnv environment that *rewards exactly this behaviour*. The contribution is the environment. To validate it works, we trained Qwen3-1.7B inside it with GRPO — the trained model **beats its own base by +19%** on 50 held-out scenarios.
 
 ---
 

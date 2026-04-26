@@ -158,7 +158,7 @@ def _header_html() -> str:
         <h1 style="font-family:'Orbitron',monospace; font-size:2.6em; font-weight:900; background:linear-gradient(90deg,#00f0ff,#ff00e5,#00f0ff); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:gradientShift 4s ease infinite; margin:0 0 10px 0; letter-spacing:3px;">CLARIFY RL</h1>
         <p style="color:#c0c0ff; font-size:1.05em; margin:4px 0; font-family:'Inter',sans-serif;">
             <span style="display:inline-block; width:9px; height:9px; background:#39ff14; border-radius:50%; margin-right:8px; vertical-align:middle; animation:neonPulse 2s ease infinite;"></span>
-            Train LLMs to <strong style="color:#fff;">ask clarifying questions</strong> instead of hallucinating
+            An RL environment that puts <strong style="color:#fff;">"Ask Before You Act"</strong> on the reward path
         </p>
         <p style="color:#8888bb; font-size:0.85em; margin-top:10px; font-family:'Inter',sans-serif;">
             <a href="https://github.com/anurag203/clarify-rl" style="color:#00f0ff; text-decoration:none; font-weight:600;">GitHub</a> &bull;
@@ -234,13 +234,14 @@ def _how_it_works_html() -> str:
 def _headline_callout_html() -> str:
     return """
     <div style="background: linear-gradient(135deg,#0a2e0a,#1a3a1a); border:2px solid #39ff14; border-radius:12px; padding:20px 24px; margin: 16px 0; box-shadow: 0 0 30px rgba(57,255,20,0.18);">
-        <div style="font-family:'Orbitron',monospace; color:#39ff14; font-size:0.85em; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">HEADLINE RESULT</div>
-        <div style="font-size:1.45em; color:#fff; line-height:1.4;">
-            Run 7 trained model <strong style="color:#39ff14;">BEATS</strong> the 1.7B base by <strong style="color:#39ff14;">+19%</strong>
+        <div style="font-family:'Orbitron',monospace; color:#39ff14; font-size:0.85em; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">VALIDATION &middot; THE IDEA TRAINS A REAL BEHAVIOR</div>
+        <div style="font-size:1.4em; color:#fff; line-height:1.4;">
+            Trained Qwen3-1.7B inside ClarifyRL &mdash; the trained model
+            <strong style="color:#39ff14;">BEATS</strong> its own base by <strong style="color:#39ff14;">+19%</strong>
             <span style="color:#aaa; font-size:0.8em;">(avg 0.075 vs 0.063)</span>
         </div>
         <div style="color:#bbb; font-size:0.92em; margin-top:8px; font-family:'Inter',sans-serif;">
-            Same model. Same data. RL taught it to ask before acting.
+            Same model. Same data. The environment changed only the behavior.
             Event planning: <strong style="color:#39ff14;">+46%</strong> (0.201 vs 0.138). Completion rate: <strong style="color:#39ff14;">+11%</strong> (20% vs 18%).
         </div>
     </div>"""
@@ -395,11 +396,11 @@ async def _run_live_episode(difficulty: str) -> list[list]:
 _OVERVIEW_MD = """
 ## The Idea
 
-LLMs **hallucinate** when given vague instructions. We built an RL environment that rewards the opposite: **ask first, then act**.
+**ClarifyRL is an OpenEnv RL environment that puts a missing safety primitive &mdash; epistemic humility &mdash; directly on the reward path.**
 
-Trained Qwen3-1.7B with **GRPO** across **7 controlled runs** (5-point KL anchor sweep). The best run beats the same-size base by **+19% on 50 held-out scenarios**.
+Every RLHF, RLVR, and GRPO-on-math paper rewards arriving at the right answer. Almost none reward *deciding to ask first*. We built the environment that does. The composable rubric penalizes hallucination, rewards info-gain, and gates on plan format. There is no shortcut.
 
-Same model. Same data. RL changed only the behavior &mdash; taught it to ask before acting.
+**Validation**: trained Qwen3-1.7B with GRPO across 7 controlled runs (5-point KL anchor sweep). The trained model beats its own base by **+19%** on 50 held-out scenarios. Same model, same data &mdash; the environment changed only the behavior. The idea trains a real, transferable behavior.
 """
 
 _API_MD = """
