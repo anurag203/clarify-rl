@@ -140,6 +140,56 @@ This rubric is hard to game: a model that fills JSON without asking is penalized
 
 ---
 
+## Plot deck — all 9 training & evaluation plots
+
+Every PNG below is committed in [`plots/`](plots/) and rendered live on the [HF Space](https://huggingface.co/spaces/agarwalanu3103/clarify-rl). All training metrics (reward curves, KL, completion length, reward variance) are self-hosted from `log_history.json` files in `outputs/run_artifacts/` — no external dashboard.
+
+### 1. Reward & KL divergence over training steps (the loss/learning curves)
+
+![Reward and KL curves over training steps](plots/01_reward_loss_curves.png)
+
+> **LEFT — Reward per training step (rolling-30 smoothed) for all 5 successful GRPO runs.** Reward climbs from near-zero toward 0.5+ across 300-400 steps. Run 7 (orange) reaches the highest peak. The horizontal dashed line marks the 1.7B base eval avg (0.063) for reference.
+> **RIGHT — KL divergence from the reference policy.** For runs with β > 0, KL stays bounded at 0.005-0.015 throughout training — the anchor is active and preventing drift.
+
+### 2. Per-family score bars — every model on the same axes
+
+![Per-family scores](plots/02_per_family_bars.png)
+
+> *Avg final score per task family for every series we evaluated: random policy → base models → all 5 trained runs.* Run 7 (orange) wins on event_planning among 1.7B configurations. The 4B base (purple) sets the ceiling.
+
+### 3. Rubric component breakdown — what's actually carrying the score
+
+![Rubric component breakdown](plots/03_component_breakdown.png)
+
+> *Reward decomposed into FormatCheck / FieldMatch / InfoGain / QuestionEfficiency / HallucinationCheck.* `InfoGain` clears 0.5-0.85 — the agent's questions are typically informative when it asks. `HallucinationCheck` ≥ 0.5 confirms the rubric is *not* rewarding fabricated fields.
+
+### 4. Aggregate before/after — base vs trained
+
+![Before vs after aggregate metrics](plots/04_before_after.png)
+
+> *Avg final score and completion rate, with each bar value labelled.* Read the 1.7B comparison left-to-right: **base 0.063 → Run 2 0.029 ↓ → Run 4 0.056 → Run 7 0.075 ✅ BEATS BASE**.
+
+### 5. Question efficiency — does the trained agent ask fewer, better questions?
+
+![Distribution of questions asked per scenario, by model](plots/05_question_efficiency.png)
+
+> *Histogram of questions asked per scenario, with mean labelled per series.* Trained 0.6B (Run 1) shifts mass into the productive 4-question region — that's the "ask before guessing" behavior we wanted.
+
+### 6. Same-base delta — where RL helps vs hurts (already shown above)
+
+### 7. Per-run × per-family scoreboard (already shown above)
+
+### 8. Training progression — the headline plot (already shown above)
+
+### 9. Training diagnostics — convergence and behavior shift
+
+![Training diagnostics](plots/09_training_diagnostics.png)
+
+> **LEFT — Reward standard deviation over training step.** Shrinking variance = policy converging on a consistent strategy. The 1.7B runs stabilize around step 150-200.
+> **RIGHT — Mean completion length per step.** Run 7 (orange) generates ~500-700 token completions consistently — long enough to ask 3-4 questions and propose a plan.
+
+---
+
 ## The trained model in action
 
 **Same scenario, same base. 300 steps of GRPO turns a re-read loop into a planner.**

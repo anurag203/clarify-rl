@@ -135,6 +135,24 @@ The aggregate +19% comes from event_planning leading and the small completion-ra
 
 Same scenario. Same model. 300 steps of GRPO turned a re-read loop into a planner that asks family-appropriate questions, picks up real fields, and ships a plan.
 
+### Reward & KL curves over training steps
+
+![Reward and KL divergence curves over training steps](../plots/01_reward_loss_curves.png)
+
+> **LEFT — Reward per training step (rolling-30 smoothed) for all 5 successful GRPO runs.** Reward climbs from near-zero to peak values across 300-400 steps, with start/end values annotated. Run 7 (orange, β=0.3) reaches the highest peak — proof the policy gradient is actively learning. The horizontal dashed line marks the 1.7B base eval avg (0.063) for reference. **RIGHT — KL divergence from the reference policy** for runs with β > 0. KL stays bounded at 0.005-0.015 throughout 300-400 steps — the anchor is active and preventing drift. Run 7 (orange) shows the cleanest plateau.
+
+### Training diagnostics — convergence and behaviour shift
+
+![Training diagnostics: reward variance and completion length over steps](../plots/09_training_diagnostics.png)
+
+> **LEFT — Reward standard deviation over training step (rolling window).** Shrinking variance = policy converging on a consistent strategy. The 1.7B runs (red Run 2, green Run 4, dark blue Run 6, orange Run 7) all show std stabilizing around step 150-200, with Run 7 maintaining the highest absolute reward magnitude. **RIGHT — Mean completion length per step.** Tracks how verbose the agent's outputs become. Run 7 (orange) generates ~500-700 token completions consistently — long enough to ask 3-4 questions and propose a structured plan, short enough to stay within the budget.
+
+### Aggregate before/after — base vs trained, all models
+
+![Aggregate eval scores: base vs trained, with delta arrows](../plots/04_before_after.png)
+
+> *Avg final score and completion rate, with each bar value labelled.* Read the 1.7B comparison left-to-right: **base 0.063 → Run 2 (β=0) 0.029 ↓ regression → Run 4 (β=0.2) 0.056 → Run 7 (β=0.3) 0.075 ↑ BEATS BASE**. The 4B base (purple) at 0.145 sets the unattainable ceiling for our compute budget. Random policy is at 0 across every metric, confirming the env is non-trivial. Y-axis is auto-scaled to the data range so the deltas are visible.
+
 ## 5. The KL anchor finding (the cleanest single-hyperparameter ablation)
 
 The most striking science from these 7 runs is the **β sweep**. Same model, same training data, same compute envelope. Only β changes:
@@ -147,6 +165,30 @@ The most striking science from these 7 runs is the **β sweep**. Same model, sam
 This is a clean controlled story: GRPO without a KL anchor catastrophically forgets. With too strong an anchor, it doesn't move. The window for "moves but stays sane" is roughly β ∈ [0.2, 0.3] for this model and dataset.
 
 The KL term itself stayed bounded between 0.005-0.015 throughout Run 4 and Run 7 — confirming the anchor was actively pulling against drift, not just a number on paper.
+
+### Per-family scores — every model on the same axes
+
+![Per-family scores: random vs base vs all trained models](../plots/02_per_family_bars.png)
+
+> *Avg final score per task family for every series we evaluated: random policy → base models → all 5 trained runs.* The two solvable families are `event_planning` and `meeting_scheduling`; `medical_intake` and `support_triage` stay at 0 across every model (open future work). The 4B base (purple) sets the ceiling. **Run 7 (orange, β=0.3) is the only trained 1.7B that beats its same-size base on event_planning**, lifting it from 0.138 → 0.201.
+
+### Rubric component breakdown — what's actually carrying the score
+
+![Rubric component breakdown: FormatCheck, FieldMatch, InfoGain, QuestionEfficiency, HallucinationCheck](../plots/03_component_breakdown.png)
+
+> *Reward decomposed into FormatCheck / FieldMatch / InfoGain / QuestionEfficiency / HallucinationCheck — averaged only across scenarios where the rubric actually computed a score (legend annotates `n_scored` per series so judges see coverage honestly).* `InfoGain` clears 0.5-0.85 across nearly every model — the agent's questions ARE typically informative when it asks. `FieldMatch` is where the larger bases (4B, 4B-Inst) lead and where Run 7 trades off — Run 7 asks more questions per scenario before committing fields. `HallucinationCheck` ≥ 0.5 across all models confirms the rubric is *not* rewarding fabricated fields.
+
+### Question efficiency — does the trained agent ask fewer, better questions?
+
+![Distribution of questions asked per scenario, by model](../plots/05_question_efficiency.png)
+
+> *Histogram of questions asked per scenario, with mean labelled per series.* The base **0.6B base** (mean 2.84, orange) gives up early — fails to call any tool on most scenarios. The **0.6B GRPO Run 1** (mean 4.20, blue) shifts mass into the productive 4-question region — that's the "ask before guessing" behaviour we wanted. **Run 7** sits near the 6-question ceiling because the larger base can already produce passable JSON; it spends the budget gathering more info before committing to a plan.
+
+### Per-run × per-family scoreboard
+
+![Per-run × per-family scoreboard with green-cell highlight on best score](../plots/07_runs_summary_table.png)
+
+> *Same numbers, single image — drop into a slide unchanged. Green cells mark the best score in each family.* Run 7 (1.7B + GRPO) wins event_planning (0.201) among all 1.7B configurations. The 4B base wins on aggregate but is unreachable for our compute budget; logged as future work.
 
 ## 6. The eval-pipeline bug saga
 
