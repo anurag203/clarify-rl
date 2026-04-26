@@ -124,7 +124,7 @@ scripts/launch_eval_job.sh ── HF Jobs ── A10G 7 min ── vLLM ── n
 scripts/make_plots.py ── PNG → committed to git → embedded in README
 ```
 
-- **Reward components** are separate Rubric classes in `server/rubric/`. Composable via `Sequential` and `WeightedSum`. Each one has unit tests in `tests/test_rubric.py`.
+- **Reward components** are separate Rubric classes in `server/rubrics.py`. Composable via `Sequential` and `WeightedSum`. Each one has unit tests in `tests/test_rubrics.py`.
 - **`Gate(FormatCheck)`** prevents reward hacking — invalid JSON yields 0 regardless of plan content.
 - **vLLM-in-HF-Job eval** because HF Inference Router doesn't serve fine-tuned community uploads. We host vLLM ourselves for $0.13 per 50-scenario eval.
 - **Colab badge** for the trainer, so judges can re-run the smoke version end-to-end.
