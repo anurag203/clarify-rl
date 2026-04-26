@@ -103,6 +103,22 @@
       "max_support_triage": 0.0
     },
     {
+      "label": "1.7B GRPO best (Run 7)",
+      "model": "agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7",
+      "n": 50,
+      "avg_score": 0.0754010101010101,
+      "format_pass_rate": 0.0,
+      "completion_rate": 0.2,
+      "fam_event_planning": 0.20097643097643098,
+      "fam_medical_intake": 0.0,
+      "fam_meeting_scheduling": 0.12348484848484848,
+      "fam_support_triage": 0.0,
+      "max_event_planning": 0.5097222222222222,
+      "max_medical_intake": 0.0,
+      "max_meeting_scheduling": 0.425,
+      "max_support_triage": 0.0
+    },
+    {
       "label": "4B base",
       "model": "Qwen/Qwen3-4B",
       "n": 50,

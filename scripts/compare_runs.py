@@ -93,6 +93,12 @@ RUN_SPECS: list[RunSpec] = [
         color="#0d47a1",
     ),
     RunSpec(
+        label="1.7B GRPO best (Run 7)",
+        eval_path=Path("outputs/run_artifacts/1.7B-Run7/evals"),
+        base_label="1.7B base",
+        color="#ff6f00",
+    ),
+    RunSpec(
         label="4B base",
         eval_path=Path("outputs/run_artifacts/4B-base/evals"),
         color="darkgray",

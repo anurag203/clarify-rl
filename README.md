@@ -144,7 +144,8 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 | Qwen3-1.7B base | 0.0669 | 18% | — |
 | Qwen3-1.7B GRPO (Run 2, β=0) | 0.0286 ↓ | 6% | yes |
 | **Qwen3-1.7B GRPO (Run 4, β=0.2)** | **0.0560 ✅** | 14% | yes |
-| **Qwen3-1.7B GRPO (Run 6, β=1.0, fixed)** | **0.0607 ✅** | 16% | yes |
+| **Qwen3-1.7B GRPO (Run 7, β=0.3) ← BEST** | **0.0754 ✅ BEATS BASE** | **20%** | yes |
+| Qwen3-1.7B GRPO (Run 6, β=1.0, fixed) | 0.0607 | 16% | yes |
 | Qwen3-4B-Instruct | 0.0399 | 6% | — |
 | **Qwen3-4B base** ← real ceiling | **0.1446** | **24%** | — |
 
@@ -166,7 +167,8 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 | Submission asset | Link |
 |---|---|
 | HF Space (env) | https://huggingface.co/spaces/agarwalanu3103/clarify-rl |
-| **⭐ Trained model — Qwen3-1.7B (Run 6, β=1.0, fixed fundamentals)** | **https://huggingface.co/Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6** |
+| **⭐ Trained model — Qwen3-1.7B (Run 7, β=0.3, BEATS BASE)** | **https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7** |
+| Trained model — Qwen3-1.7B (Run 6, β=1.0, fixed pipeline) | https://huggingface.co/Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6 |
 | Trained model — Qwen3-1.7B (Run 4, β=0.2 KL anchor) | https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2 |
 | Trained model — Qwen3-1.7B (Run 2, β=0, ablation regression) | https://huggingface.co/anurag203/clarify-rl-run2-qwen3-1.7b-no-kl |
 | Trained model — Qwen3-0.6B (Run 1, weak-base baseline) | https://huggingface.co/anurag203/clarify-rl-run1-qwen3-0.6b-no-kl |

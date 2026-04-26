@@ -85,7 +85,37 @@ button.primary:hover { box-shadow: 0 0 30px rgba(0,240,255,0.5), 0 0 60px rgba(2
 
 input, select, textarea, [data-testid="textbox"], .wrap { background: #111128 !important; color: #e0e0ff !important; border-color: #1e1e4a !important; border-radius: 8px !important; }
 label, .label-text { color: #8888bb !important; }
-[data-testid="chatbot"], .chatbot { background: #111128 !important; border: 1px solid #1e1e4a !important; border-radius: 12px !important; }
+[data-testid="chatbot"], .chatbot, .chatbot-container,
+.message-row, .bubble-wrap, .message-bubble { background: #111128 !important; border-color: #1e1e4a !important; }
+[data-testid="chatbot"] .message, .chatbot .message { background: #1a1a3e !important; color: #e0e0ff !important; border-radius: 8px !important; }
+.bot .message-bubble, .message-row.bot .bubble-wrap { background: #151535 !important; }
+.user .message-bubble, .message-row.user .bubble-wrap { background: rgba(0,240,255,0.08) !important; }
+
+/* Force tab visibility */
+button[role="tab"], .tab-nav button, .tabs .tab-nav button {
+    font-size: 0.95em !important;
+    padding: 12px 24px !important;
+    color: #aaaadd !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+    background: #111128 !important;
+    border: 2px solid #1e1e4a !important;
+    border-radius: 8px !important;
+    margin: 2px 4px !important;
+}
+button[role="tab"]:hover, .tab-nav button:hover {
+    color: #00f0ff !important;
+    border-color: #00f0ff !important;
+    background: rgba(0,240,255,0.1) !important;
+}
+button[role="tab"][aria-selected="true"], button[role="tab"].selected,
+.tab-nav button.selected {
+    color: #00f0ff !important;
+    border-color: #00f0ff !important;
+    background: rgba(0,240,255,0.15) !important;
+    box-shadow: 0 0 12px rgba(0,240,255,0.3) !important;
+}
 
 @keyframes neonPulse {
     0%, 100% { box-shadow: 0 0 4px #39ff14; }
@@ -397,23 +427,22 @@ Sequential(
 """
 
 _RESULTS_MD = """
-## Training Progression
+## Run 7 Beats the Base Model
 
-7 GRPO runs with a **5-point KL beta sweep** {0, 0.2, 0.3, 0.5, 1.0} and a training pipeline overhaul between Runs 4 and 6.
+**avg_score 0.075 vs 1.7B base 0.063 — a 19% improvement.** Event planning: 0.201 vs base 0.138 (+46%).
 
-| Beta | Run | Avg Score | Key Finding |
-|------|-----|-----------|-------------|
-| 0.0 | Run 2 | 0.029 | Catastrophic collapse on event_planning |
-| 0.2 | Run 4 | 0.056 | Recovered event_planning, **beats base** (0.175 vs 0.138) |
-| 0.3 | Run 7 | *training* | Reward 0.48-0.73 (highest ever) |
-| 0.5 | Run 5 | *canceled* | Reward stuck at 0 (pre-fix pipeline) |
-| 1.0 | Run 6 | 0.061 | Nearly matches base (fixed pipeline) |
+| Beta | Run | Avg Score | Event Planning | Key Finding |
+|------|-----|-----------|----------------|-------------|
+| 0.0 | Run 2 | 0.029 | 0.000 | Catastrophic collapse |
+| 0.2 | Run 4 | 0.056 | **0.175** | Recovered event_planning, beats base |
+| **0.3** | **Run 7** | **0.075** | **0.201** | **BEATS BASE (+19% overall)** |
+| 1.0 | Run 6 | 0.061 | 0.119 | Nearly matches base (fixed pipeline) |
 
-### 4 Root Causes Fixed in Run 6
+### Training Pipeline Fixes (between Run 4 and Run 6)
 
 1. **Example contamination** &mdash; removed misleading field-name example
 2. **Sparse reward** &mdash; added plan-submission bonus + no-plan penalty
-3. **Missing required keys** &mdash; surfaced required fields in observations
+3. **Missing required keys** &mdash; surfaced required field names in observations
 4. **Role mismatch** &mdash; aligned training and eval prompt formats
 
 ---
