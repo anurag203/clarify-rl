@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-04-26 07:25 IST — Claude (Cursor) — Phase 11: submission lap CLOSED + final polish
+
+- **Run 4 weights mirror to `anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2` is LIVE** (started 04:17, completed 06:33, 2h16min total for `snapshot_download` + `upload_folder` of the 6.88 GB model). `model.safetensors` resolves to a 6,882,335,328-byte presigned `cas-bridge.xethub.hf.co` URL with `X-Xet-Cas-Uid=public` — judges can download without auth. All 3 mirrors (Run 1, Run 2, Run 4) confirmed `private=False` via HF API.
+- **Auto-watcher script** (`/tmp/clarify-rl-mirror/await_mirror_and_finalize.py`) self-piloted cleanup at 06:33:03 — stripped the fallback block from `docs/model_cards/run4-qwen3-1.7b-beta0.2.md`, committed `edd1efe`, pushed to GitHub `main` and HF Hub model repo. Hero model is now self-contained on the personalized mirror.
+- **README restructured for judges** (commit `9240521` and earlier): added `## ⏱ Judges — 60-second tour` at top with 5-step flow + Problem/Environment/Results/Why-it-matters arc + 1-line caption under every plot + Wild Card #5 promoted into the title block + embedded `assets/demo_replay_screenshot.png` (Replay viewer tab showing a Run 4 rollout with per-rubric breakdown, 1440x1100 / 187 KB, captured via headless Chrome).
+- **Run 4 model card YAML cleanup** (commit `2e31357`): removed the `datasets: agarwalanu3103/clarify-rl` pill that HF Hub was rendering as a disabled grey tag (it was the env Space, not a dataset). Pushed cleaned card to GitHub + HF Hub. Confirmed `cardData.datasets: ABSENT` and `tags with dataset prefix: []` on the API.
+- **Final logged-out smoke test**: 15/15 README-referenced URLs return HTTP 200 (env Space, demo Space, all 3 model mirrors, Colab notebook, GitHub README, raw plots, blog, model cards). Env Space `POST /reset` returns a real `CallToolObservation` (`meeting_scheduling` family, 6-question budget, proper instructions). Submission auto-validator gates all GREEN.
+- **Files touched this phase**: `README.md` (60s tour + screenshot embed + Wild Card promotion), `docs/STATUS.md` (mirror progress + final state), `docs/model_cards/run4-qwen3-1.7b-beta0.2.md` (fallback note removed by watcher + datasets pill removed), `docs/slides.md` (path-typo fix `server/rubric/` → `server/rubrics.py`), `assets/demo_replay_screenshot.png` (new).
+- **Final spend**: ≈ $5.8 of $120 HF Jobs budget across 3 trained runs + 1 base eval + 1 Run 4 eval. ~9.5 h to the 5 PM IST deadline at log close. All deliverable links live and public.
+
+---
+
 ## 2026-04-25 23:55 IST — Cascade (Cursor) — Phase 9: TWO root-cause bugs found and fixed
 
 - **Run 2 launched** (Qwen3-1.7B / 400 steps / a100-large) — currently downloading deps + bootstrapping vLLM. Runs to completion in ~3h.
