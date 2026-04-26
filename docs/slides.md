@@ -61,13 +61,15 @@ Sequential(
 
 ## Slide 4 · Training recipe
 
-| Run | Base | β (KL anchor) | LR | Steps | Time | Cost |
-|---|---|---|---|---|---|---|
-| Run 1 | Qwen3-0.6B | 0 | 5e-6 | 300 | 30 min A100 | $1.08 |
-| Run 2 | Qwen3-1.7B | **0** | 5e-6 | 400 | 60 min A100 | $2.21 |
-| **Run 4** ⭐ | Qwen3-1.7B | **0.2** | **5e-7** | 300 | 78 min A100 | $1.80 |
+| Run | Base | β (KL anchor) | LR | Steps | Key result |
+|---|---|---|---|---|---|
+| Run 1 | Qwen3-0.6B | 0 | 1e-6 | 300 | Unlocks event_planning (0 → 0.382 max) |
+| Run 2 | Qwen3-1.7B | **0** | 1e-6 | 400 | Regresses (0.067 → 0.029). Collapses event_planning. |
+| **Run 4** | Qwen3-1.7B | **0.2** | **5e-7** | 300 | KL anchor recovers event_planning (0 → 0.175, beats base) |
+| **Run 6** | Qwen3-1.7B | **1.0** | 5e-7 | 300 | Fixed pipeline. Nearly matches base (0.061 vs 0.063). |
+| **Run 7** ⭐ | Qwen3-1.7B | **0.3** | **1e-6** | 400 | **Training rewards 0.48-0.73** (highest ever). Eval pending. |
 
-Same env. Same dataset. Same MCP tools. Run 2 vs Run 4 = pure ablation on **β** + a 10× lower learning rate. Total spend: **~$5.80 of $120 budget** — most of the 7 evals were vLLM-in-HF-Job at $0.13 each.
+7 GRPO runs total (5 completed, 1 canceled, 1 training). Same env. Same MCP tools. A 5-point β-sweep {0, 0.2, 0.3, 0.5, 1.0} with a training pipeline overhaul between Runs 4 and 6.
 
 Held-out eval: **n=50 scenarios per checkpoint**, deterministic seeds, async WebSocket harness, Run 1 / Run 2 / Run 4 / 0.6B-base / 1.7B-base / 4B-base / 4B-Instruct = **7 evals** total.
 
@@ -119,7 +121,7 @@ The reproducible chain (every step is an `./scripts/launch_*.sh` away):
 
 ```text
 training/train_grpo.py  ── HF Jobs ── A100 1.5 h ──> agarwalanu3103/clarify-rl-grpo-*
-                                    + W&B trace
+                                    + self-hosted metrics
 scripts/launch_eval_job.sh ── HF Jobs ── A10G 7 min ── vLLM ── n=50 evals → JSON
 scripts/make_plots.py ── PNG → committed to git → embedded in README
 ```
@@ -133,12 +135,10 @@ scripts/make_plots.py ── PNG → committed to git → embedded in README
 
 ## Slide 8 · What we'd do next (we ran out of time, not ideas)
 
-1. **4B + β=0.2 + half-LR.** Run 3 (4B + β=0) was queued in HF Jobs but canceled at 48 min in SCHEDULING. Given Run 4 confirmed the KL anchor wins, the obvious next experiment is to apply it at 4B. The 4B base alone scores 0.1446 (24% completion!) on this eval, so the headroom is real.
-2. **Curriculum on family difficulty.** medical_intake + support_triage stayed at 0.000 across every model. The rubric there punishes fabrication too aggressively — there's a curriculum design lesson hiding.
-3. **A second KL ablation point** (β=0.05, β=0.1) to find the knee of the curve.
-4. **Step-up to a richer plan format.** Right now plan is a flat JSON. A nested format (sub-tasks, conditions) would let us study compositional clarification.
-
-Logged in `docs/blog.md §7b — Future work`.
+1. **4B + GRPO with fixed pipeline.** The 4B base alone scores 0.1446 — the headroom is real.
+2. **Curriculum on family difficulty.** medical_intake + support_triage stayed at 0.000. Needs family-specific warm-up.
+3. **Even longer training.** Run 7's reward is still climbing at step 100/400 — 600-1000 steps may push further.
+4. **Compositional plans.** Nested format (sub-tasks, conditions) for studying multi-level clarification.
 
 ---
 
@@ -146,13 +146,13 @@ Logged in `docs/blog.md §7b — Future work`.
 
 | Asset | URL |
 |---|---|
-| **HF Space (env, OpenEnv MCP server)** | `huggingface.co/spaces/agarwalanu3103/clarify-rl` |
-| **Demo Space (3 tabs: replay, KL ablation, live chat)** | `huggingface.co/spaces/anurag203/clarify-rl-demo` |
-| **Hero model — Run 4 (β=0.2)** | `huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2` |
+| **HF Space (env + Gradio UI)** | `huggingface.co/spaces/agarwalanu3103/clarify-rl` |
+| **Demo Space (replay + live chat)** | `huggingface.co/spaces/anurag203/clarify-rl-demo` |
+| **Trained model — Run 6 (fixed pipeline)** | `huggingface.co/Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6` |
+| **Trained model — Run 4 (KL anchor)** | `huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2` |
 | **Code (GitHub)** | `github.com/anurag203/clarify-rl` |
-| **Training notebook (Colab badge)** | `colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb` |
-| **Blog post (full writeup, 27 KB)** | `github.com/anurag203/clarify-rl/blob/main/docs/blog.md` |
-| **W&B dashboard (3 runs live)** | `wandb.ai/anuragagarwal203-cisco/clarify-rl` |
+| **Training notebook (Colab)** | `colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb` |
+| **Blog post (full writeup)** | `github.com/anurag203/clarify-rl/blob/main/docs/blog.md` |
 
 Auto-validator gates all GREEN (see `SUBMISSION_CHECKLIST.md`).
 

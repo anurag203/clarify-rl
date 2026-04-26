@@ -66,6 +66,9 @@ GRPO computes per-rollout advantages by comparing each rollout's reward to the g
 | 2 | Qwen3-1.7B | 0.0 | 1e-6 | 8 | 400 | A | done — eval'd |
 | 3 | Qwen3-4B | 0.0 | 1e-6 | 2 | 300 | B (Kanan2005) | canceled (queue) |
 | **4** | **Qwen3-1.7B** | **0.2** | **5e-7** | 8 | 300 | C (2022uec1542) | **done — eval'd** |
+| 5 | Qwen3-1.7B | 0.5 | 5e-7 | 8 | 300 | C | canceled (reward stuck at 0) |
+| **6** | **Qwen3-1.7B** | **1.0** | **5e-7** | 8 | 300 | B (Kanan2005) | **done — eval'd (fixed pipeline)** |
+| **7** | **Qwen3-1.7B** | **0.3** | **1e-6** | 8 | 400 | A (agarwalanu3103) | **training** |
 
 Run 4 is the controlled twin of Run 2 — same 1.7B model, same env, same compute envelope — except for two changes: TRL `beta=0.2` KL anchor and half the learning rate (5e-7 vs 1e-6). The question we wanted answered: does KL regularization prevent the family-narrowing we saw in Run 2 while preserving its `meeting_scheduling` peak? **Verdict: yes on the first, no on the second** (see § 5.2). The KL stayed bounded between 0.005-0.010 throughout training, confirming the anchor was actively pulling against drift. Run 3 was meant as a 4B-scale confirmation of the same finding but sat in the HF Jobs scheduling queue for 48 minutes on Account B's a100-large; with Run 4 already in hand we canceled it rather than push into the submission deadline (see §7b). All trained runs use the same env Space (Account A), which we configured for `max_concurrent_envs=64` to support concurrent rollout streams. Other knobs:
 
@@ -187,6 +190,21 @@ The most important takeaway from the per-family table is that our reward shape w
 3. **Curriculum over families.** All five families share a single batch. Trained 0.6B ended up only learning `event_planning` because that's the one whose scenarios it could partially solve — a curriculum that warms up on the easiest family then mixes harder ones in would likely close the medical/support-triage gap.
 4. **Scale-aware hyperparams.** Our 0.6B and 1.7B configs were identical (`num_gen=8, lr=1e-6, max_steps≈300-400`). The honest reading of section 5 is that GRPO worked for 0.6B because the model had nothing to lose, and hurt 1.7B because it had something to lose. We had a Run 3 queued to test this at 4B scale (β=0, lr=1e-6, num_gen=2, max_completion_len=768 to fit a single A100-80GB). It sat in HF Jobs' SCHEDULING queue for 48 minutes on Account B's a100-large; with Run 4 already in hand we cancelled rather than push into the deadline. The natural next-step experiment — given Run 4 — would be **4B + β=0.2 + half-LR**, which is what we'd run on a stable h200 if we had another 24 hours.
 
+## 7c. Training pipeline overhaul (Runs 5-7)
+
+After the initial 4-run KL ablation, we did a deep analysis of *why* eval scores were consistently below the base model. We found **4 root causes** in the training pipeline that were silently undermining every run:
+
+1. **Example contamination in the prompt.** The training `PROMPT` included `propose_plan(plan='{"start_time": "2pm", "duration": "30min"}')` as an illustration. These are *meeting-specific keys that don't match any family's required fields*. Run 5 logs confirmed the model was literally copying `start_time`/`duration` for event_planning tasks. FormatCheck failed, reward = 0.
+2. **Reward misalignment on timeout.** When an episode timed out without `propose_plan`, `env.reward` retained the last shaping reward (+0.02 to +0.05), teaching the model "just keep asking questions" was better than submitting a plan that might score 0. We added `NO_PLAN_PENALTY = -0.1` and `PLAN_SUBMISSION_BONUS = +0.05`.
+3. **Missing required-keys hint.** The reset observation told the model the task family but not the required keys. A 1.7B model cannot memorize which keys belong to which of 5 families from scratch. We added `Required plan fields: event_type, date, guest_count, venue` to the observation.
+4. **Train/eval role mismatch.** Training used `user` role for the system prompt; eval used `system` role. We aligned both.
+
+**Run 5** (beta=0.5, old pipeline) confirmed the problem: reward stuck at 0 on 8/10 steps. Canceled.
+
+**Run 6** (beta=1.0, fixed pipeline) proved the fixes work: reward was non-zero from step 1 (0.12), peaked at 0.27, and every training step had `frac_reward_zero_std: 0`. Eval: avg_score=0.061, nearly matching 1.7B base (0.063 on same v5 prompts). But beta=1.0 was too conservative to *beat* the base.
+
+**Run 7** (beta=0.3, lr=1e-6, 400 steps, fixed pipeline) is the current best attempt: training rewards of **0.48-0.73** at step 90/400. With a moderate KL anchor and the fixed pipeline preventing collapse, this run has the highest training reward of any run in the project. Eval pending.
+
 ## 8. What didn't work (and why we kept the lessons)
 
 1. **Llama-3.x-Instruct, Qwen2.5-Instruct.** Both fail TRL's `add_response_schema` because their chat templates don't support tool-use schema injection. Stayed in the Qwen3 family.
@@ -205,7 +223,7 @@ cd clarify-rl
 pip install -e .
 
 # Run the env locally
-uvicorn server.app:app --host 0.0.0.0 --port 8000
+uvicorn server.app:app --host 0.0.0.0 --port 7860
 
 # Smoke training (5 steps, no Hub push)
 HF_TOKEN=hf_xxx SMOKE=1 ./scripts/launch_hf_job.sh Qwen/Qwen3-0.6B a100-large
@@ -227,8 +245,9 @@ Or open the [training notebook in Colab](https://colab.research.google.com/githu
 
 ## 10. Future work
 
-- **Family-aware reward shape (the big one).** Our 0% format pass rate everywhere shows the structural gate `<question>...</question>` is the wrong gate for tool-call models. A schema-completeness reward keyed off `{family → required_keys}` would let the rubric's semantic components actually carry weight.
-- **KL-penalized GRPO on stronger bases. ✅ ANSWERED.** Run 4 was exactly this experiment, and the answer is yes: `beta=0.2` restored `event_planning` (0.000 → 0.175, beats base) and recovered avg score (0.029 → 0.056). The right read of Run 2's regression is **"missing KL anchor"**, not "RL doesn't help 1.7B." Open question for next iteration: can we find a β between 0 and 0.2 that keeps Run 2's 0.725 meeting peak while still recovering event_planning? Likely β ∈ [0.05, 0.10] with the same half-LR schedule.
+- **Family-aware reward shape. ✅ DONE in Run 6-7.** Our 0% format pass rate everywhere showed the structural gate was the wrong gate for tool-call models. We added `REQUIRED_KEYS_BY_FAMILY` mapping to the training script and surfaced required fields in the observation. Combined with `NO_PLAN_PENALTY` and `PLAN_SUBMISSION_BONUS`, this transformed the reward landscape: Run 6 had non-zero rewards from step 1, and Run 7 reached rewards of 0.48-0.73 (vs 0.01 max in Run 4).
+- **KL-penalized GRPO on stronger bases. ✅ ANSWERED.** Run 4 was exactly this experiment, and the answer is yes: `beta=0.2` restored `event_planning` (0.000 → 0.175, beats base) and recovered avg score (0.029 → 0.056). **Update:** Run 6 (beta=1.0, fixed pipeline) nearly matched the base (0.061 vs 0.063). Run 7 (beta=0.3, lr=1e-6, 400 steps) is training with the strongest reward signal yet.
+- **β sweep. ✅ IN PROGRESS.** We now have data at β ∈ {0, 0.2, 0.3, 0.5, 1.0}, forming a 5-point ablation. Early results suggest β=0.3 with the fixed pipeline is the sweet spot: strong enough to prevent collapse, loose enough to let the model improve beyond the base.
 - **Cross-family generalization.** Current task families are sampled at training time. Holding out a family entirely (e.g., train on 4, eval on the 5th) would test whether the asking-behavior generalizes or memorizes.
 - **Hard scenarios.** Right now `eval_held_out.json` is 50/30/20% easy/medium/hard. A `super_hard` tier with adversarial vagueness ("do the thing") would test whether the trained models degrade gracefully or collapse.
 - **Multi-turn ambiguity resolution.** Currently each question reveals one field. A more realistic env would have the user respond ambiguously sometimes, requiring follow-up questions.
