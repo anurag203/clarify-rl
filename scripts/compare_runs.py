@@ -63,7 +63,7 @@ RUN_SPECS: list[RunSpec] = [
         color="tab:gray",
     ),
     RunSpec(
-        label="0.6B GRPO (Run 1)",
+        label="Probe (0.6B, β=0)",
         eval_path=Path("outputs/run_artifacts/v4/evals/eval_clarify-rl-grpo-qwen3-0-6b_n50_v4.json"),
         base_label="0.6B base",
         color="tab:blue",
@@ -74,26 +74,26 @@ RUN_SPECS: list[RunSpec] = [
         color="dimgray",
     ),
     RunSpec(
-        label="1.7B GRPO no-KL (Run 2)",
+        label="Drift (1.7B, β=0)",
         eval_path=Path("outputs/run_artifacts/1.7B/evals/eval_clarify-rl-grpo-qwen3-1-7b_n50.json"),
         base_label="1.7B base",
         color="tab:orange",
     ),
     RunSpec(
-        label="1.7B GRPO +KL (Run 4)",
+        label="Anchor (1.7B, β=0.2)",
         # Auto-resolved from outputs/run_artifacts/1.7B-KL/evals/<latest>.json
         eval_path=Path("outputs/run_artifacts/1.7B-KL/evals"),
         base_label="1.7B base",
         color="tab:green",
     ),
     RunSpec(
-        label="1.7B GRPO fixed (Run 6)",
+        label="Restrain (1.7B, β=1.0)",
         eval_path=Path("outputs/run_artifacts/1.7B-Run6/evals"),
         base_label="1.7B base",
         color="#0d47a1",
     ),
     RunSpec(
-        label="1.7B GRPO best (Run 7)",
+        label="Champion (1.7B, β=0.3)",
         eval_path=Path("outputs/run_artifacts/1.7B-Run7/evals"),
         base_label="1.7B base",
         color="#ff6f00",

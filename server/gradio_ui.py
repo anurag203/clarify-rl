@@ -531,12 +531,12 @@ _RESULTS_MD = """
 
 | Beta | Run | Avg Score | Event Planning | Key Finding |
 |------|-----|-----------|----------------|-------------|
-| 0.0 | Run 2 | 0.029 | 0.000 | Catastrophic collapse |
-| 0.2 | Run 4 | 0.056 | **0.175** | Recovered event_planning, beats base |
-| **0.3** | **Run 7** | **0.075** | **0.201** | **BEATS BASE (+19% overall)** |
-| 1.0 | Run 6 | 0.061 | 0.119 | Nearly matches base (fixed pipeline) |
+| 0.0 | **Drift** | 0.029 | 0.000 | Catastrophic collapse |
+| 0.2 | **Anchor** | 0.056 | **0.175** | Recovered event_planning, beats base |
+| **0.3** | **Champion** | **0.075** | **0.201** | **BEATS BASE (+19% overall)** |
+| 1.0 | **Restrain** | 0.061 | 0.119 | Nearly matches base (fixed pipeline) |
 
-### Training Pipeline Fixes (between Run 4 and Run 6)
+### Training Pipeline Fixes (between Anchor and Restrain)
 
 1. **Example contamination** &mdash; removed misleading field-name example
 2. **Sparse reward** &mdash; added plan-submission bonus + no-plan penalty

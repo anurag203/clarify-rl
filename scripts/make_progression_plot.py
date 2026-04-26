@@ -27,15 +27,14 @@ from typing import Any
 
 _LABEL_COLORS: dict[str, str] = {
     "0.6B base":                "#ffb74d",
-    "0.6B GRPO (Run 1)":        "#1f77b4",
+    "Probe (0.6B, β=0)":        "#1f77b4",
     "1.7B base":                "#66bb6a",
-    "1.7B GRPO no-KL (Run 2)":  "#e53935",
-    "1.7B GRPO +KL (Run 4)":    "#2e7d32",
-    "1.7B GRPO fixed (Run 6)":  "#0d47a1",
-    "1.7B GRPO best (Run 7)":   "#ff6f00",
+    "Drift (1.7B, β=0)":        "#e53935",
+    "Anchor (1.7B, β=0.2)":     "#2e7d32",
+    "Restrain (1.7B, β=1.0)":   "#0d47a1",
+    "Champion (1.7B, β=0.3)":   "#ff6f00",
     "4B base":                  "#5e35b1",
     "4B-instruct":              "#00838f",
-    "4B GRPO (Run 3)":          "#ff6f00",
 }
 
 _FALLBACK = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
@@ -74,11 +73,11 @@ def _extract_series(hist: list[dict]) -> dict[str, list]:
 
 
 _BEFORE_AFTER_PAIRS: list[tuple[str, str]] = [
-    ("0.6B base", "0.6B GRPO (Run 1)"),
-    ("1.7B base", "1.7B GRPO no-KL (Run 2)"),
-    ("1.7B base", "1.7B GRPO +KL (Run 4)"),
-    ("1.7B base", "1.7B GRPO fixed (Run 6)"),
-    ("1.7B base", "1.7B GRPO best (Run 7)"),
+    ("0.6B base", "Probe (0.6B, β=0)"),
+    ("1.7B base", "Drift (1.7B, β=0)"),
+    ("1.7B base", "Anchor (1.7B, β=0.2)"),
+    ("1.7B base", "Restrain (1.7B, β=1.0)"),
+    ("1.7B base", "Champion (1.7B, β=0.3)"),
 ]
 
 

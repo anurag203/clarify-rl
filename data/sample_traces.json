@@ -1,6 +1,6 @@
 [
   {
-    "model_label": "Run 7 (\u03b2=0.3)",
+    "model_label": "Champion (1.7B, \u03b2=0.3)",
     "scenario_id": "seed10004_event_planning_medium",
     "family": "event_planning",
     "request": "Plan a birthday party.",
@@ -69,7 +69,7 @@
     ]
   },
   {
-    "model_label": "Run 4 (\u03b2=0.2)",
+    "model_label": "Anchor (1.7B, \u03b2=0.2)",
     "scenario_id": "seed10004_event_planning_medium",
     "family": "event_planning",
     "request": "Plan a birthday party.",
@@ -138,7 +138,7 @@
     ]
   },
   {
-    "model_label": "Run 4 (\u03b2=0.2)",
+    "model_label": "Anchor (1.7B, \u03b2=0.2)",
     "scenario_id": "seed10000_event_planning_hard",
     "family": "event_planning",
     "request": "Plan a birthday party.",
@@ -207,7 +207,7 @@
     ]
   },
   {
-    "model_label": "Run 7 (\u03b2=0.3)",
+    "model_label": "Champion (1.7B, \u03b2=0.3)",
     "scenario_id": "seed10010_event_planning_hard",
     "family": "event_planning",
     "request": "Plan a birthday party.",
@@ -276,7 +276,7 @@
     ]
   },
   {
-    "model_label": "Run 7 (\u03b2=0.3)",
+    "model_label": "Champion (1.7B, \u03b2=0.3)",
     "scenario_id": "seed10002_meeting_scheduling_easy",
     "family": "meeting_scheduling",
     "request": "Schedule a sync.",
@@ -345,7 +345,7 @@
     ]
   },
   {
-    "model_label": "Run 4 (\u03b2=0.2)",
+    "model_label": "Anchor (1.7B, \u03b2=0.2)",
     "scenario_id": "seed10010_event_planning_medium",
     "family": "event_planning",
     "request": "Set up a celebration.",
@@ -414,7 +414,7 @@
     ]
   },
   {
-    "model_label": "Run 1 (0.6B)",
+    "model_label": "Probe (0.6B, \u03b2=0)",
     "scenario_id": "seed10004_event_planning_hard",
     "family": "event_planning",
     "request": "Organize a team event.",

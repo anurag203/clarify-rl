@@ -111,18 +111,18 @@ This rubric is hard to game: a model that fills JSON without asking is penalized
 |---|---|---|---|
 | Random policy | 0.0000 | 0% | n/a |
 | Qwen3-0.6B base | 0.0000 | 0% | — |
-| Qwen3-0.6B GRPO (Run 1, β=0) | 0.0076 | 2% | yes |
+| **Probe** (Qwen3-0.6B, β=0) | 0.0076 | 2% | yes |
 | Qwen3-1.7B base | 0.0669 | 18% | — |
-| Qwen3-1.7B GRPO (Run 2, β=0) | 0.0286 ↓ | 6% | yes |
-| Qwen3-1.7B GRPO (Run 4, β=0.2) | 0.0560 | 14% | yes |
-| Qwen3-1.7B GRPO (Run 6, β=1.0, fixed pipeline) | 0.0607 | 16% | yes |
-| **Qwen3-1.7B GRPO (Run 7, β=0.3) ← BEST** | **0.0754 ✅ BEATS BASE** | **20%** | yes |
+| **Drift** (Qwen3-1.7B, β=0) | 0.0286 ↓ | 6% | yes |
+| **Anchor** (Qwen3-1.7B, β=0.2) | 0.0560 | 14% | yes |
+| **Restrain** (Qwen3-1.7B, β=1.0, fixed pipeline) | 0.0607 | 16% | yes |
+| **Champion** (Qwen3-1.7B, β=0.3) ← BEST | **0.0754 ✅ BEATS BASE** | **20%** | yes |
 | Qwen3-4B-Instruct | 0.0399 | 6% | — |
 | **Qwen3-4B base** ← real ceiling | **0.1446** | **24%** | — |
 
 **Per-family breakdown — KL anchor + training pipeline progression:**
 
-| Family | 1.7B base | Run 2 (β=0) | Run 4 (β=0.2) | Run 6 (β=1.0) | **Run 7 (β=0.3)** | 4B base |
+| Family | 1.7B base | Drift (β=0) | Anchor (β=0.2) | Restrain (β=1.0) | **Champion (β=0.3)** | 4B base |
 |---|---|---|---|---|---|---|
 | event_planning (μ) | 0.138 | 0.000 ❌ | 0.175 ✅ | 0.119 | **0.201 ✅** | 0.340 |
 | meeting_scheduling (μ) | 0.153 | 0.130 | 0.064 | 0.146 | 0.124 | 0.287 |
@@ -174,7 +174,7 @@ Every PNG below is committed in [`plots/`](plots/) and rendered live on the [HF 
 
 ![Distribution of questions asked per scenario, by model](plots/05_question_efficiency.png)
 
-> *Histogram of questions asked per scenario, with mean labelled per series.* Trained 0.6B (Run 1) shifts mass into the productive 4-question region — that's the "ask before guessing" behavior we wanted.
+> *Histogram of questions asked per scenario, with mean labelled per series.* Trained 0.6B (Probe) shifts mass into the productive 4-question region — that's the "ask before guessing" behavior we wanted.
 
 ### 6. Same-base delta — where RL helps vs hurts (already shown above)
 
@@ -197,7 +197,7 @@ Every PNG below is committed in [`plots/`](plots/) and rendered live on the [HF 
 
 `seed10004_event_planning_hard` — surface request: *"Organize a team event."*
 
-| Step | Untrained Qwen3-0.6B (score 0.000) | Trained Qwen3-0.6B / Run 1 (score 0.382) |
+| Step | Untrained Qwen3-0.6B (score 0.000) | Trained Qwen3-0.6B / Probe (score 0.382) |
 |---|---|---|
 | 0–8 | calls `get_task_info()` 9× in a loop | asks `"event details?"` → "Up to you" |
 | 9 | asks `"technical specifications?"` ← *wrong family* | asks `"specific time and location?"` → reveals `venue=home` |
@@ -226,7 +226,7 @@ curl -X POST http://localhost:7860/reset -H 'Content-Type: application/json' -d 
 # Smoke run (5 steps, ~$0.50, no Hub push)
 HF_TOKEN=hf_xxx SMOKE=1 ./scripts/launch_hf_job.sh Qwen/Qwen3-0.6B a10g-small
 
-# Production run (~$2/run, ~1.5h on a100-large) — Run 7 recipe
+# Production run (~$2/run, ~1.5h on a100-large) — Champion recipe
 HF_TOKEN=hf_xxx BETA=0.3 LEARNING_RATE=1e-6 \
   ./scripts/launch_hf_job.sh Qwen/Qwen3-1.7B a100-large 400
 ```

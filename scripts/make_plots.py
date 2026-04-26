@@ -61,12 +61,12 @@ _LABEL_COLORS: dict[str, str] = {
     "policy (deterministic)":   "#9e9e9e",   # neutral grey
     "policy (baseline)":        "#9e9e9e",
     "0.6B base":                "#ffb74d",   # warm orange
-    "0.6B GRPO (Run 1)":        "#1f77b4",   # strong blue
+    "Probe (0.6B, β=0)":        "#1f77b4",   # strong blue — exploratory
     "1.7B base":                "#66bb6a",   # mid green
-    "1.7B GRPO no-KL (Run 2)":  "#e53935",   # red — the regression run
-    "1.7B GRPO +KL (Run 4)":    "#2e7d32",   # deep green — KL-anchored hero
-    "1.7B GRPO fixed (Run 6)":  "#0d47a1",   # dark blue — fixed fundamentals
-    "1.7B GRPO best (Run 7)":   "#ff6f00",   # orange — best run, beats base
+    "Drift (1.7B, β=0)":        "#e53935",   # red — collapsed
+    "Anchor (1.7B, β=0.2)":     "#2e7d32",   # deep green — KL anchor recovers
+    "Restrain (1.7B, β=1.0)":   "#0d47a1",   # dark blue — too anchored
+    "Champion (1.7B, β=0.3)":   "#ff6f00",   # orange — winner, beats base
     "4B base":                  "#5e35b1",   # purple — ceiling marker
     "4B-instruct":              "#00838f",   # teal
     "4B GRPO (Run 3)":          "#ff6f00",   # amber

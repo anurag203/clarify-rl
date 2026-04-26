@@ -175,24 +175,24 @@ All runs share these `GRPOConfig` settings: `gradient_accumulation_steps=8`, `op
 <details open>
 <summary><strong>Phase 1 (Runs 1-4): The KL anchor finding</strong></summary>
 
-Run 2 (1.7B, β=0) regressed catastrophically. It destroyed event_planning to chase one peak in meeting_scheduling. The aggregate score went from base 0.067 to trained 0.029 — **a 57% drop**. Same model, same data; the policy had over-committed to a single family's solution and forgotten the others.
+Drift (1.7B, β=0) regressed catastrophically. It destroyed event_planning to chase one peak in meeting_scheduling. The aggregate score went from base 0.067 to trained 0.029 — **a 57% drop**. Same model, same data; the policy had over-committed to a single family's solution and forgotten the others.
 
-Run 4 (same model, β=0.2, half learning rate at 5e-7) recovered the destroyed family. event_planning went from 0 (Run 2) to **0.175** — beating the same-size base (0.138). The KL term stayed bounded between 0.005-0.015 throughout 300 steps, confirming the anchor was actively pulling the policy back.
+Anchor (same model, β=0.2, half learning rate at 5e-7) recovered the destroyed family. event_planning went from 0 (Drift) to **0.175** — beating the same-size base (0.138). The KL term stayed bounded between 0.005-0.015 throughout 300 steps, confirming the anchor was actively pulling the policy back.
 
 We now had clear evidence that **the missing piece was the KL regularizer**.
 
-But Run 4's aggregate (0.056) still slightly trailed the base (0.063). We thought we were close. We were not.
+But Anchor's aggregate (0.056) still slightly trailed the base (0.063). We thought we were close. We were not.
 
 </details>
 
 <details>
 <summary><strong>Phase 2 (the diagnostic): 4 hidden bugs in our own pipeline</strong></summary>
 
-Run 5 (β=0.5) was supposed to be the ablation point between Run 4 and a stronger anchor. Instead, the training reward stuck at 0 for 26 steps and we had to cancel. That stuck-at-zero reward forced us to look hard at what was actually happening inside the rollouts.
+A diagnostic run (β=0.5) was supposed to be the ablation point between Anchor and a stronger anchor. Instead, the training reward stuck at 0 for 26 steps and we had to cancel. That stuck-at-zero reward forced us to look hard at what was actually happening inside the rollouts.
 
 We found four root causes silently capping every run:
 
-1. **Example contamination in the prompt.** Our training prompt included `propose_plan(plan='{"start_time": "2pm", "duration": "30min"}')` as an illustration. These are *meeting-specific keys that don't match any other family's required fields*. Run 5 logs confirmed the model was literally copying `start_time`/`duration` for event_planning tasks. FormatCheck failed → reward = 0.
+1. **Example contamination in the prompt.** Our training prompt included `propose_plan(plan='{"start_time": "2pm", "duration": "30min"}')` as an illustration. These are *meeting-specific keys that don't match any other family's required fields*. Diagnostic-run logs confirmed the model was literally copying `start_time`/`duration` for event_planning tasks. FormatCheck failed → reward = 0.
 
 2. **Reward misalignment on timeout.** When an episode ran out of steps without `propose_plan`, the env reward retained the last shaping reward (+0.02 to +0.05). The model learned: *"keep asking forever, never submit"* — easier than committing to a plan that might score 0. We added `NO_PLAN_PENALTY = -0.1` and `PLAN_SUBMISSION_BONUS = +0.05`.
 
@@ -205,9 +205,9 @@ We found four root causes silently capping every run:
 <details>
 <summary><strong>Phase 3 (Runs 6-7): The breakthrough</strong></summary>
 
-**Run 6** (β=1.0, fixed pipeline) was the proof the fixes worked. Training reward was non-zero from step 1 — the first run with a healthy training curve. `frac_reward_zero_std` dropped from ~1.0 to ~0.0 (the rollouts were now producing meaningful advantages). Eval matched the base (0.061 vs 0.063 on same prompts). But β=1.0 was too conservative for real improvement.
+**Restrain** (β=1.0, fixed pipeline) was the proof the fixes worked. Training reward was non-zero from step 1 — the first run with a healthy training curve. `frac_reward_zero_std` dropped from ~1.0 to ~0.0 (the rollouts were now producing meaningful advantages). Eval matched the base (0.061 vs 0.063 on same prompts). But β=1.0 was too conservative for real improvement — it restrained the policy from moving.
 
-**Run 7** (β=0.3, lr=1e-6, 400 steps) hit the sweet spot. Training rewards reached **0.48-0.73** — 10× higher than any previous run. And the eval showed it: **0.075 average, beating the 1.7B base by 19%**. Event planning lifted from base 0.138 → trained 0.201, **a 46% improvement** on the family with the most ambiguous surface requests.
+**Champion** (β=0.3, lr=1e-6, 400 steps) hit the sweet spot. Training rewards reached **0.48-0.73** — 10× higher than any previous run. And the eval showed it: **0.075 average, beating the 1.7B base by 19%**. Event planning lifted from base 0.138 → trained 0.201, **a 46% improvement** on the family with the most ambiguous surface requests.
 
 </details>
 
@@ -249,12 +249,12 @@ The complete scoreboard, n=50 held-out scenarios:
 |---|:---:|:---:|:---:|:---:|
 | Random policy | n/a | 0.0000 | 0% | 0.000 |
 | Qwen3-0.6B base | 0.6B | 0.0000 | 0% | 0.000 |
-| **Qwen3-0.6B GRPO (Run 1, β=0)** | 0.6B | **0.0076** ↑ | 2% | 0.382 |
+| **Probe** (Qwen3-0.6B, β=0) | 0.6B | **0.0076** ↑ | 2% | 0.382 |
 | Qwen3-1.7B base | 1.7B | 0.0669 | 18% | 0.522 |
-| Qwen3-1.7B GRPO (Run 2, β=0) | 1.7B | 0.0286 ↓ | 6% | **0.725** |
-| Qwen3-1.7B GRPO (Run 4, β=0.2) | 1.7B | 0.0560 | 14% | 0.510 |
-| Qwen3-1.7B GRPO (Run 6, β=1.0) | 1.7B | 0.0607 | 16% | 0.378 |
-| **Qwen3-1.7B GRPO (Run 7, β=0.3) ← BEST** | 1.7B | **0.0754** ✅ | **20%** | 0.510 |
+| **Drift** (Qwen3-1.7B, β=0) | 1.7B | 0.0286 ↓ | 6% | **0.725** |
+| **Anchor** (Qwen3-1.7B, β=0.2) | 1.7B | 0.0560 | 14% | 0.510 |
+| **Restrain** (Qwen3-1.7B, β=1.0) | 1.7B | 0.0607 | 16% | 0.378 |
+| **Champion** (Qwen3-1.7B, β=0.3) ← BEST | 1.7B | **0.0754** ✅ | **20%** | 0.510 |
 | Qwen3-4B-Instruct | 4B | 0.0399 | 6% | 0.757 |
 | **Qwen3-4B base** ← real ceiling | 4B | **0.1446** | **24%** | **0.819** |
 
@@ -264,7 +264,7 @@ Per-family breakdown for every 1.7B configuration vs the base:
 
 <div align="center">
 
-| Family | 1.7B base | Run 2 (β=0) | Run 4 (β=0.2) | Run 6 (β=1.0) | **Run 7 (β=0.3)** |
+| Family | 1.7B base | Drift (β=0) | Anchor (β=0.2) | Restrain (β=1.0) | **Champion (β=0.3)** |
 |---|:---:|:---:|:---:|:---:|:---:|
 | event_planning μ | 0.138 | **0.000 ❌** | **0.175 ✅** | 0.119 | **0.201 ✅** |
 | event_planning max | 0.522 | 0.000 | 0.510 | 0.378 | 0.510 |
@@ -333,10 +333,10 @@ Per-family breakdown for every 1.7B configuration vs the base:
 |---|:---:|---|
 | Random policy | 3.96 | flat U[0,6] |
 | 0.6B base | 2.84 | bimodal at 0 and 5 — many *"give up"* outcomes |
-| **0.6B Run 1 (trained)** | 4.20 | bimodal at 1 and 5 — uses budget more deliberately |
+| **Probe (0.6B) (trained)** | 4.20 | bimodal at 1 and 5 — uses budget more deliberately |
 | 1.7B base | 5.20 | concentrated at 5-6 — leans on *"ask until forced"* |
-| 1.7B Run 2 (no-KL) | 5.70 | shifted further toward the 6-cap |
-| **1.7B Run 7 (β=0.3)** | 5.48 | spends most of the budget gathering info |
+| Drift (no-KL) | 5.70 | shifted further toward the 6-cap |
+| **1.7B Champion (β=0.3)** | 5.48 | spends most of the budget gathering info |
 | 4B-Instruct | 4.84 | broad, 4-6 dominant |
 
 </div>
@@ -355,17 +355,17 @@ What did GRPO *actually* change in the model's behavior? We pulled raw rollout t
 
 - **No more `<think>` token-waste anywhere.** Qwen3 ships with reasoning ON by default, which on a 300-token budget burns the entire reply inside `<think>...</think>` and never reaches the tool-call line. Disabling via `chat_template_kwargs={"enable_thinking": False}` (mirrored at train AND eval time) collapsed eval runtime from "never completes" to ~0.7s/scenario for 0.6B and ~2.3s/scenario for 1.7B.
 
-- **0.6B Run 1: format adherence emerges in the right places.** The trained 0.6B emits balanced `ask_question("...")` then `propose_plan({...})` for the scenarios where it scores. The base 0.6B emits free text or invalid syntax in those same scenarios.
+- **Probe (0.6B): format adherence emerges in the right places.** The trained 0.6B emits balanced `ask_question("...")` then `propose_plan({...})` for the scenarios where it scores. The base 0.6B emits free text or invalid syntax in those same scenarios.
 
-- **1.7B Run 2 (no-KL): format adherence emerges *too eagerly*.** The trained 1.7B (no-KL) starts with proper tool calls but truncates the question loop earlier than the base, jumping to `propose_plan({...})` before key fields are revealed. On event_planning this collapses to empty/sparse plans.
+- **Drift (no-KL): format adherence emerges *too eagerly*.** The trained 1.7B (no-KL) starts with proper tool calls but truncates the question loop earlier than the base, jumping to `propose_plan({...})` before key fields are revealed. On event_planning this collapses to empty/sparse plans.
 
-- **1.7B Run 7: the right balance.** Run 7 shows the training pipeline and KL anchor working in concert — it asks an average of 5.48 questions per scenario, submits valid plans on 20% of scenarios (vs base 18%), and recovers most of event_planning that Run 2 destroyed.
+- **Champion: the right balance.** Champion shows the training pipeline and KL anchor working in concert — it asks an average of 5.48 questions per scenario, submits valid plans on 20% of scenarios (vs base 18%), and recovers most of event_planning that Drift destroyed.
 
 A concrete comparison on `seed10004_event_planning_hard` (*"Organize a team event."*):
 
 <div align="center">
 
-| Step | Untrained Qwen3-0.6B (score 0.000) | Trained Qwen3-0.6B / Run 1 (score 0.382) |
+| Step | Untrained Qwen3-0.6B (score 0.000) | Trained Qwen3-0.6B / Probe (score 0.382) |
 |:---:|---|---|
 | 0-8 | calls `get_task_info()` 9× in a loop | asks *"event details?"* → "Up to you" |
 | 9 | asks *"technical specifications?"* — wrong family | asks *"specific time and location?"* → reveals `venue=home` |
@@ -388,21 +388,21 @@ Same model, same training data, same compute envelope. **Only β changes:**
 
 | β | Run | Avg Score | Event Planning | Effect |
 |:---:|:---:|:---:|:---:|---|
-| **0.0** | Run 2 | 0.029 ↓ | **0.000 ❌ collapse** | No anchor → policy forgets families |
-| **0.2** | Run 4 | 0.056 | **0.175 ✅** | Recovers event_planning, beats base on it |
-| **0.3** | **Run 7** | **0.075 ✅** | **0.201 ✅** | **Sweet spot. BEATS BASE overall (+19%)** |
-| **1.0** | Run 6 | 0.061 | 0.119 | Too conservative, policy stays put |
+| **0.0** | **Drift** | 0.029 ↓ | **0.000 ❌ collapse** | No anchor → policy forgets families |
+| **0.2** | **Anchor** | 0.056 | **0.175 ✅** | Recovers event_planning, beats base on it |
+| **0.3** | **Champion** | **0.075 ✅** | **0.201 ✅** | **Sweet spot. BEATS BASE overall (+19%)** |
+| **1.0** | **Restrain** | 0.061 | 0.119 | Too conservative, policy stays put |
 
 </div>
 
-GRPO without a KL anchor catastrophically forgets. With too strong an anchor, it doesn't move. The window for *"moves but stays sane"* is roughly **β ∈ [0.2, 0.3]** for this model and dataset. The KL term itself stayed bounded between 0.005-0.015 throughout Run 4 and Run 7 — confirming the anchor was actively pulling against drift, not just a number on paper.
+GRPO without a KL anchor catastrophically forgets. With too strong an anchor, it doesn't move. The window for *"moves but stays sane"* is roughly **β ∈ [0.2, 0.3]** for this model and dataset. The KL term itself stayed bounded between 0.005-0.015 throughout Anchor and Champion — confirming the anchor was actively pulling against drift, not just a number on paper.
 
 <details>
 <summary><strong>Six honest observations from the data</strong></summary>
 
-1. **The KL anchor cleanly fixed Run 2's regression.** Same model, same training data — only β changed. event_planning went 0.138 → 0.000 (β=0) → 0.175 (β=0.2) → 0.201 (β=0.3). That is the cleanest controlled comparison in the table.
+1. **The KL anchor cleanly fixed Drift's regression.** Same model, same training data — only β changed. event_planning went 0.138 → 0.000 (β=0) → 0.175 (β=0.2) → 0.201 (β=0.3). That is the cleanest controlled comparison in the table.
 
-2. **The cost of the anchor is the peak.** Run 2's gem was the 0.725 max on meeting_scheduling — the highest single-scenario score on a trained 1.7B. Run 4 dropped it to 0.350; Run 7 to 0.425. β prevents the extreme specialization Run 2 leaned on.
+2. **The cost of the anchor is the peak.** Drift's gem was the 0.725 max on meeting_scheduling — the highest single-scenario score on a trained 1.7B. Anchor dropped it to 0.350; Champion to 0.425. β prevents the extreme specialization Drift leaned on.
 
 3. **GRPO unlocks weak bases.** The base 0.6B never scored anything; the trained 0.6B scored on event_planning (max 0.382). The only sub-1B configuration in our experiments that produced a non-zero plan score in this env.
 
@@ -410,7 +410,7 @@ GRPO without a KL anchor catastrophically forgets. With too strong an anchor, it
 
 5. **The real ceiling is Qwen3-4B *base*, not 4B-Instruct.** 4B base (no RL) scores avg 0.145 and tops 0.819 — the highest single-scenario score we've seen at any size. Instruct-tuning *hurt* the 4B (4B-Inst avg 0.040). For multi-turn tool-using tasks, instruction-SFT seems to weaken patient field-by-field reasoning.
 
-6. **Reward magnitude tells the right story.** Run 7's training reward peaked at 0.73 (vs Run 4's 0.01 and Run 2's 0.029) — a 10× improvement that translated into a real eval delta. Run 7 is the first run where both training and eval signals are healthy.
+6. **Reward magnitude tells the right story.** Champion's training reward peaked at 0.73 (vs Anchor's 0.01 and Drift's 0.029) — a 10× improvement that translated into a real eval delta. Champion is the first run where both training and eval signals are healthy.
 
 </details>
 
@@ -524,11 +524,11 @@ A sixth issue, mostly mechanical: the env Space was rejecting concurrent eval cl
 
 | Item | Hardware | Wall time | Cost |
 |---|:---:|:---:|:---:|
-| Run 1 (0.6B, 300 steps) | a100-large | 30 min | $1.25 |
-| Run 2 (1.7B, 400 steps) | a100-large | 60 min | $2.50 |
-| Run 4 (1.7B, 300 steps, β=0.2) | a100-large | 78 min | $3.25 |
-| Run 6 (1.7B, 300 steps, β=1.0) | a100-large | 70 min | $2.92 |
-| Run 7 (1.7B, 400 steps, β=0.3) | a100-large | 94 min | $3.92 |
+| Probe (0.6B, 300 steps, β=0) | a100-large | 30 min | $1.25 |
+| Drift (1.7B, 400 steps, β=0) | a100-large | 60 min | $2.50 |
+| Anchor (1.7B, 300 steps, β=0.2) | a100-large | 78 min | $3.25 |
+| Restrain (1.7B, 300 steps, β=1.0) | a100-large | 70 min | $2.92 |
+| **Champion (1.7B, 400 steps, β=0.3)** | a100-large | 94 min | $3.92 |
 | 9 evals (n=50 each, vLLM) | a10g-large | 2-7 min/eval | ~$1.50 total |
 | **Total** | | | **~$15** |
 
@@ -553,7 +553,7 @@ uvicorn server.app:app --host 0.0.0.0 --port 7860
 # Smoke run (5 steps, ~$0.50, no Hub push)
 HF_TOKEN=hf_xxx SMOKE=1 ./scripts/launch_hf_job.sh Qwen/Qwen3-0.6B a10g-small
 
-# Full Run 7 recipe (~$4, ~1.5 h on a100-large)
+# Champion recipe (~$4, ~1.5 h on a100-large)
 HF_TOKEN=hf_xxx BETA=0.3 LEARNING_RATE=1e-6 \
   ./scripts/launch_hf_job.sh Qwen/Qwen3-1.7B a100-large 400
 ```
@@ -577,7 +577,7 @@ We want to be transparent about what this submission does *not* show:
 
 1. **medical_intake and support_triage are 0 across every model** — including the 4B base. The fields are tightly coupled (a missing `order_id` invalidates the plan even if other fields are correct). A curriculum or hierarchical scoring would likely fix this.
 
-2. **No 4B GRPO run.** Run 3 was queued but canceled at 48 minutes in HF Jobs SCHEDULING. Listed as future work.
+2. **No 4B GRPO run.** A 4B run was queued but canceled at 48 minutes in HF Jobs SCHEDULING. Listed as future work.
 
 3. **Single random seed per run.** All 7 runs use seed=42. The clean β monotonicity suggests the result is robust, but a 3-seed sweep is the proper confirmation.
 
