@@ -77,6 +77,8 @@ _BEFORE_AFTER_PAIRS: list[tuple[str, str]] = [
     ("0.6B base", "0.6B GRPO (Run 1)"),
     ("1.7B base", "1.7B GRPO no-KL (Run 2)"),
     ("1.7B base", "1.7B GRPO +KL (Run 4)"),
+    ("1.7B base", "1.7B GRPO fixed (Run 6)"),
+    ("1.7B base", "1.7B GRPO best (Run 7)"),
 ]
 
 

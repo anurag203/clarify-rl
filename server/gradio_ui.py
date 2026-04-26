@@ -125,6 +125,10 @@ button[role="tab"][aria-selected="true"], button[role="tab"].selected,
     0%, 100% { background-position: 0% center; }
     50% { background-position: 200% center; }
 }
+@keyframes heroBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.025); }
+}
 """
 
 
@@ -152,24 +156,42 @@ def _load_summary_table() -> str:
     return "\n".join(lines)
 
 
-def _header_html() -> str:
+def _hero_zone_html() -> str:
+    """The unified hero zone: title, value prop, GIANT +19%, caption, stat chips."""
     return """
-    <div style="text-align:center; padding:32px 20px 24px; background:linear-gradient(135deg,#0a0a2e 0%,#1a0a3e 50%,#0a0a2e 100%); border-bottom:2px solid #00f0ff; box-shadow:0 4px 30px rgba(0,240,255,0.15); border-radius:12px; margin-bottom:12px;">
-        <h1 style="font-family:'Orbitron',monospace; font-size:2.6em; font-weight:900; background:linear-gradient(90deg,#00f0ff,#ff00e5,#00f0ff); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:gradientShift 4s ease infinite; margin:0 0 10px 0; letter-spacing:3px;">CLARIFY RL</h1>
-        <p style="color:#c0c0ff; font-size:1.05em; margin:4px 0; font-family:'Inter',sans-serif;">
-            <span style="display:inline-block; width:9px; height:9px; background:#39ff14; border-radius:50%; margin-right:8px; vertical-align:middle; animation:neonPulse 2s ease infinite;"></span>
+    <div style="text-align:center; padding:36px 20px 28px; background:linear-gradient(135deg,#0a0a2e 0%,#1a0a3e 50%,#0a0a2e 100%); border:1px solid #1e1e4a; border-radius:16px; margin-bottom:14px; box-shadow:0 8px 40px rgba(0,240,255,0.12);">
+
+        <h1 style="font-family:'Orbitron',monospace; font-size:1.8em; font-weight:900; background:linear-gradient(90deg,#00f0ff,#ff00e5,#00f0ff); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:gradientShift 4s ease infinite; margin:0; letter-spacing:3px;">CLARIFY RL</h1>
+
+        <p style="color:#c0c0ff; font-size:0.95em; margin:6px 0 24px 0; font-family:'Inter',sans-serif;">
             An RL environment that puts <strong style="color:#fff;">"Ask Before You Act"</strong> on the reward path
         </p>
-        <p style="color:#8888bb; font-size:0.85em; margin-top:10px; font-family:'Inter',sans-serif;">
-            <a href="https://github.com/anurag203/clarify-rl" style="color:#00f0ff; text-decoration:none; font-weight:600;">GitHub</a> &bull;
-            <a href="https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md" style="color:#00f0ff; text-decoration:none; font-weight:600;">Blog</a> &bull;
-            <a href="https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb" style="color:#00f0ff; text-decoration:none; font-weight:600;">Colab</a> &bull;
-            <a href="https://huggingface.co/spaces/anurag203/clarify-rl-demo" style="color:#00f0ff; text-decoration:none; font-weight:600;">Demo</a>
-        </p>
+
+        <div style="font-family:'Orbitron',monospace; font-size:5.5em; font-weight:900; line-height:1; background:linear-gradient(135deg,#39ff14 0%,#00f0ff 50%,#ff00e5 100%); background-size:200% 200%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:gradientShift 5s ease infinite, heroBreathe 4s ease infinite; text-shadow:0 0 60px rgba(57,255,20,0.3); margin:0; letter-spacing:1px;">+19%</div>
+
+        <div style="color:#fff; font-size:1.15em; margin-top:14px; font-family:'Inter',sans-serif; font-weight:500;">
+            Trained <strong style="color:#39ff14;">Qwen3-1.7B</strong> beats its own base on 50 held-out scenarios
+        </div>
+        <div style="color:#8888bb; font-size:0.88em; margin-top:6px; font-family:'Inter',sans-serif;">
+            Same model. Same data. RL changed only the behavior.
+        </div>
+
+        <div style="display:inline-flex; align-items:center; gap:8px; margin-top:18px; padding:6px 14px; background:rgba(57,255,20,0.1); border:1px solid rgba(57,255,20,0.4); border-radius:20px;">
+            <span style="display:inline-block; width:8px; height:8px; background:#39ff14; border-radius:50%; animation:neonPulse 2s ease infinite;"></span>
+            <span style="color:#39ff14; font-family:'Orbitron',monospace; font-size:0.72em; letter-spacing:1.5px; text-transform:uppercase;">Live Env Space &middot; Try it Below</span>
+        </div>
+
+        <div style="margin-top:18px; font-size:0.82em; font-family:'Inter',sans-serif;">
+            <a href="https://github.com/anurag203/clarify-rl" style="color:#00f0ff; text-decoration:none; font-weight:600; padding:0 10px;">GitHub</a><span style="color:#444;">|</span>
+            <a href="https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md" style="color:#00f0ff; text-decoration:none; font-weight:600; padding:0 10px;">Blog</a><span style="color:#444;">|</span>
+            <a href="https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb" style="color:#00f0ff; text-decoration:none; font-weight:600; padding:0 10px;">Colab</a><span style="color:#444;">|</span>
+            <a href="https://huggingface.co/spaces/anurag203/clarify-rl-demo" style="color:#00f0ff; text-decoration:none; font-weight:600; padding:0 10px;">Demo</a>
+        </div>
     </div>"""
 
 
-def _stat_cards_html() -> str:
+def _stat_chips_html() -> str:
+    """Compact 3-chip row of the most impactful supporting numbers."""
     p = _PLOTS / "runs_summary.json"
     if not p.exists():
         return ""
@@ -177,22 +199,27 @@ def _stat_cards_html() -> str:
     rows = data.get("rows", [])
     best = max((r for r in rows if "GRPO" in r.get("label", "")), key=lambda r: r.get("avg_score", 0), default=None)
     base = next((r for r in rows if r.get("label") == "1.7B base"), None)
-    ceiling = next((r for r in rows if r.get("label") == "4B base"), None)
     n_runs = sum(1 for r in rows if "GRPO" in r.get("label", ""))
 
-    def card(value, label, color, glow):
-        return f'<div style="flex:1; min-width:130px; background:#111128; border:1px solid #1e1e4a; border-radius:12px; padding:16px 12px; text-align:center; transition:all 0.3s;" onmouseover="this.style.borderColor=\'{color}\'; this.style.boxShadow=\'0 0 20px {glow}\';" onmouseout="this.style.borderColor=\'#1e1e4a\'; this.style.boxShadow=\'none\';"><div style="font-family:\'Orbitron\',monospace; font-size:1.8em; font-weight:900; color:{color}; text-shadow:0 0 10px {glow};">{value}</div><div style="font-size:0.7em; color:#8888bb; text-transform:uppercase; letter-spacing:1.5px; margin-top:4px; font-family:\'Inter\',sans-serif;">{label}</div></div>'
+    def chip(value, label, color, glow):
+        return (
+            f'<div style="flex:1; min-width:170px; background:#111128; border:1px solid #1e1e4a; '
+            f'border-radius:10px; padding:14px 18px; transition:all 0.3s;" '
+            f'onmouseover="this.style.borderColor=\'{color}\'; this.style.boxShadow=\'0 0 18px {glow}\'; this.style.transform=\'translateY(-2px)\';" '
+            f'onmouseout="this.style.borderColor=\'#1e1e4a\'; this.style.boxShadow=\'none\'; this.style.transform=\'translateY(0)\';">'
+            f'<div style="font-family:\'Orbitron\',monospace; font-size:1.5em; font-weight:900; color:{color}; text-shadow:0 0 10px {glow}; line-height:1.1;">{value}</div>'
+            f'<div style="font-size:0.7em; color:#8888bb; text-transform:uppercase; letter-spacing:1.5px; margin-top:6px; font-family:\'Inter\',sans-serif;">{label}</div>'
+            f'</div>'
+        )
 
-    cards = []
+    chips = []
     if best:
-        cards.append(card(f"{best['avg_score']:.3f}", "Best Trained", "#00f0ff", "rgba(0,240,255,0.4)"))
+        chips.append(chip(f"{best['avg_score']:.3f}", "Trained avg score (Run 7)", "#00f0ff", "rgba(0,240,255,0.4)"))
     if base:
-        cards.append(card(f"{base['avg_score']:.3f}", "1.7B Base", "#ff00e5", "rgba(255,0,229,0.4)"))
-    if ceiling:
-        cards.append(card(f"{ceiling['avg_score']:.3f}", "4B Ceiling", "#39ff14", "rgba(57,255,20,0.4)"))
-    cards.append(card(str(n_runs), "GRPO Runs", "#fffc00", "rgba(255,252,0,0.4)"))
-    cards.append(card("5", "Task Families", "#ff6b00", "rgba(255,107,0,0.4)"))
-    return f'<div style="display:flex; gap:12px; margin:12px 0; flex-wrap:wrap;">{"".join(cards)}</div>'
+        gain = (best['avg_score'] - base['avg_score']) / base['avg_score'] * 100 if best and base['avg_score'] > 0 else 0
+        chips.append(chip("+46%", "Event planning lift", "#ff00e5", "rgba(255,0,229,0.4)"))
+    chips.append(chip(f"{n_runs} runs", "5-point β sweep", "#fffc00", "rgba(255,252,0,0.4)"))
+    return f'<div style="display:flex; gap:12px; margin:12px 0 18px 0; flex-wrap:wrap;">{"".join(chips)}</div>'
 
 
 def _how_it_works_html() -> str:
@@ -231,18 +258,48 @@ def _how_it_works_html() -> str:
     </div>"""
 
 
-def _headline_callout_html() -> str:
-    return """
-    <div style="background: linear-gradient(135deg,#0a2e0a,#1a3a1a); border:2px solid #39ff14; border-radius:12px; padding:20px 24px; margin: 16px 0; box-shadow: 0 0 30px rgba(57,255,20,0.18);">
-        <div style="font-family:'Orbitron',monospace; color:#39ff14; font-size:0.85em; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">VALIDATION &middot; THE IDEA TRAINS A REAL BEHAVIOR</div>
-        <div style="font-size:1.4em; color:#fff; line-height:1.4;">
-            Trained Qwen3-1.7B inside ClarifyRL &mdash; the trained model
-            <strong style="color:#39ff14;">BEATS</strong> its own base by <strong style="color:#39ff14;">+19%</strong>
-            <span style="color:#aaa; font-size:0.8em;">(avg 0.075 vs 0.063)</span>
+def _story_flow_html() -> str:
+    """3-card horizontal story flow: Problem -> Environment -> Proof."""
+    card_base = (
+        "flex:1; min-width:240px; background:#0d0d24; border-radius:12px; "
+        "padding:18px 20px; transition:all 0.3s ease; cursor:default;"
+    )
+    onhover = "this.style.transform='translateY(-3px)'; this.style.boxShadow"
+    return f"""
+    <div style="margin:18px 0 22px 0;">
+        <div style="text-align:center; margin-bottom:14px;">
+            <div style="font-family:'Orbitron',monospace; color:#00f0ff; font-size:0.78em; letter-spacing:2.5px; text-transform:uppercase;">The Story in 3 Steps</div>
         </div>
-        <div style="color:#bbb; font-size:0.92em; margin-top:8px; font-family:'Inter',sans-serif;">
-            Same model. Same data. The environment changed only the behavior.
-            Event planning: <strong style="color:#39ff14;">+46%</strong> (0.201 vs 0.138). Completion rate: <strong style="color:#39ff14;">+11%</strong> (20% vs 18%).
+        <div style="display:flex; gap:14px; align-items:stretch; flex-wrap:wrap;">
+
+            <div style="{card_base} border:1px solid #1e1e4a; border-top:3px solid #ff4444;"
+                onmouseover="{onhover}='0 0 24px rgba(255,68,68,0.18)';"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div style="font-family:'Orbitron',monospace; color:#ff4444; font-size:0.72em; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;">1 &middot; The Problem</div>
+                <div style="font-size:1.15em; color:#fff; font-weight:600; margin-bottom:6px;">LLMs hallucinate on vague tasks.</div>
+                <div style="font-size:0.88em; color:#aaa; line-height:1.5;">No RL paper rewards <em style="color:#ff7777;">deciding to ask first</em> &mdash; they all reward arriving at the right answer.</div>
+            </div>
+
+            <div style="display:flex; align-items:center; color:#00f0ff; font-size:1.8em; font-weight:300;">&rarr;</div>
+
+            <div style="{card_base} border:1px solid #1e1e4a; border-top:3px solid #00f0ff;"
+                onmouseover="{onhover}='0 0 24px rgba(0,240,255,0.2)';"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div style="font-family:'Orbitron',monospace; color:#00f0ff; font-size:0.72em; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;">2 &middot; The Environment</div>
+                <div style="font-size:1.15em; color:#fff; font-weight:600; margin-bottom:6px;">5-component composable rubric.</div>
+                <div style="font-size:0.88em; color:#aaa; line-height:1.5;">FormatCheck &times; FieldMatch &times; InfoGain &times; Efficiency &times; Hallucination. Every signal must balance &mdash; no shortcut.</div>
+            </div>
+
+            <div style="display:flex; align-items:center; color:#00f0ff; font-size:1.8em; font-weight:300;">&rarr;</div>
+
+            <div style="{card_base} border:1px solid #1e1e4a; border-top:3px solid #39ff14;"
+                onmouseover="{onhover}='0 0 24px rgba(57,255,20,0.22)';"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div style="font-family:'Orbitron',monospace; color:#39ff14; font-size:0.72em; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;">3 &middot; The Proof</div>
+                <div style="font-size:1.15em; color:#fff; font-weight:600; margin-bottom:6px;">Run 7 beats the 1.7B base.</div>
+                <div style="font-size:0.88em; color:#aaa; line-height:1.5;">Same model. Same data. <strong style="color:#39ff14;">Different reward = different agent.</strong> Validated across 50 held-out scenarios.</div>
+            </div>
+
         </div>
     </div>"""
 
@@ -499,18 +556,14 @@ def build_gradio_ui() -> gr.Blocks:
     with gr.Blocks(title="ClarifyRL — AskBeforeYouAct") as demo:
 
         gr.HTML(f"<style>{_CSS}</style>")
-        gr.HTML(_header_html())
-        gr.HTML(_stat_cards_html())
-        gr.HTML(_headline_callout_html())
+        gr.HTML(_hero_zone_html())
+        gr.HTML(_stat_chips_html())
+        gr.HTML(_story_flow_html())
 
         with gr.Tabs():
 
-            # ── TAB 1: Overview ──────────────────────────────────
-            with gr.TabItem("Overview"):
-                gr.Markdown(_OVERVIEW_MD)
-                gr.HTML(_how_it_works_html())
-                gr.HTML(_before_after_html())
-
+            # ── TAB 1: Results ────────────────────────────────────
+            with gr.TabItem("Results"):
                 hero = _plot_path("08_training_progression.png")
                 if hero:
                     gr.Image(hero, label="Training Progression & Eval Results")
@@ -520,10 +573,10 @@ def build_gradio_ui() -> gr.Blocks:
 
                 si = _plot_path("07_runs_summary_table.png")
                 if si:
-                    gr.Image(si, label="Runs Summary")
+                    gr.Image(si, label="Runs Summary Scoreboard")
 
-            # ── TAB 2: Agent Replays ─────────────────────────────
-            with gr.TabItem("Agent Replays"):
+            # ── TAB 2: Watch Agent Play ──────────────────────────
+            with gr.TabItem("Watch Agent Play"):
                 gr.Markdown(
                     "## Scored Episode Replays\n\n"
                     "Browse **real eval episodes** where the trained model asked questions and proposed plans. "
@@ -571,12 +624,12 @@ def build_gradio_ui() -> gr.Blocks:
                         return [[None, f"Error: {exc}"]]
                 run_btn.click(fn=run_ep, inputs=[difficulty], outputs=[raw_chat])
 
-            # ── TAB 3: API & Docker ──────────────────────────────
-            with gr.TabItem("API & Docker"):
+            # ── TAB 3: Use the Env ───────────────────────────────
+            with gr.TabItem("Use the Env"):
                 gr.Markdown(_API_MD)
 
-            # ── TAB 4: Training Results ──────────────────────────
-            with gr.TabItem("Training Results"):
+            # ── TAB 4: Plot Deck ─────────────────────────────────
+            with gr.TabItem("Plot Deck"):
                 gr.Markdown(_RESULTS_MD)
                 for title, fname in [
                     ("Training Progression", "08_training_progression.png"),
