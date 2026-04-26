@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-04-26 16:14 IST — Cascade (Windsurf) — Phase 16b: '0 runs' fix + instant tab clicks
+
+- **Bug 1: stat-chip rendered '0 runs'.** `_stat_chips_html` counted GRPO rows by literal `"GRPO"` substring in the label, but the rename to Probe/Drift/Anchor/Restrain/Champion stripped that token. Switched detection to `"β=" in label` (also catches the unicode escape form). Chip now reads `5 runs` correctly.
+- **Bug 2: tab-cards felt laggy on click.** Each click round-tripped 5 `gr.update(elem_classes=...)` patches over the WS to the FastAPI backend before the active glow moved (~300–700 ms perceived). Replaced the Python class-flip with a `js=` callback that runs in the browser before the Python fn — measured **6–8 ms click→paint on the live HF Space** (Playwright timing across 4 sequential card clicks). Python callback shrinks to a single `gr.Tabs(selected=…)` return.
+- Pushed `e8661af` to GitHub `origin/main` directly, then synced to HF Space `hf/main` as `e0be40d` via `/tmp/clarify-rl-hf-sync-v2/` (LFS-auth workaround dir, same as last session).
+- Verified live: `https://agarwalanu3103-clarify-rl.hf.space/` → chip shows `5 runs`; clicking each of the 4 cards moves the cyan-magenta glow in 6–8 ms.
+- Files touched: `server/gradio_ui.py` (+26 / −19, single-file change). Plan artifact still at `~/.windsurf/plans/clarify-rl-tab-cards-ef3b7f.md`.
+
+---
+
 ## 2026-04-26 16:02 IST — Cascade (Windsurf) — Phase 16: big-card tab navigation
 
 - Replaced Gradio's barely-visible horizontal tab pills (`Results / Watch Agent Play / Use the Env / Plot Deck`) with a 4-column grid of large clickable cards (~132 px tall) placed above the tab content. Each card has a 2.4em emoji icon (📊 🎬 ⚡ 🖼), an Orbitron uppercase title, and a 1-line subtitle.
