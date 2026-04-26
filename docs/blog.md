@@ -7,7 +7,7 @@
 [![HF Space](https://img.shields.io/badge/HF%20Space-clarify--rl-00f0ff?style=for-the-badge)](https://huggingface.co/spaces/agarwalanu3103/clarify-rl)
 [![GitHub](https://img.shields.io/badge/GitHub-anurag203/clarify--rl-39ff14?style=for-the-badge)](https://github.com/anurag203/clarify-rl)
 [![Colab](https://img.shields.io/badge/Colab-train__grpo.ipynb-ff00e5?style=for-the-badge)](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb)
-[![Run 7 model](https://img.shields.io/badge/Model-Run%207%20BEATS%20BASE-39ff14?style=for-the-badge)](https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7)
+[![Trained model](https://img.shields.io/badge/Model-Trained%20%CE%B2%3D0.3%20BEATS%20BASE-39ff14?style=for-the-badge)](https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7)
 
 > **Every RLHF, RLVR, and GRPO-on-math paper rewards arriving at the right answer. Almost none reward deciding to ask first. We built the environment that does — and validated it works.**
 
@@ -55,7 +55,7 @@ So we built **ClarifyRL** — an OpenEnv RL environment where the only path to a
 
 <div align="center">
 
-| Metric | 1.7B Base | Run 7 (Trained) | Improvement |
+| Metric | 1.7B Base | Trained (β=0.3) | Improvement |
 |---|:---:|:---:|:---:|
 | **Avg score** | 0.063 | **0.075** | **<span style="color:#39ff14;">+19%</span>** |
 | **Event planning** | 0.138 | **0.201** | **<span style="color:#39ff14;">+46%</span>** |
@@ -67,7 +67,7 @@ So we built **ClarifyRL** — an OpenEnv RL environment where the only path to a
   <img src="../plots/08_training_progression.png" alt="Training progression and evaluation improvement" width="100%"/>
 </p>
 
-> *Reward climbs over training (left) for all 5 successful GRPO runs. The right panel shows the eval before/after pair: base (grey) vs trained (color) on the same 50 scenarios. **Run 7 (orange) is the only trained 1.7B that breaks past the base on aggregate** — proof the environment trains a real, measurable behavior.*
+> *Reward climbs over training (left) for all 5 successful GRPO runs across the β sweep. The right panel shows the eval before/after pair: base (grey) vs trained (color) on the same 50 scenarios. **The β=0.3 trained model (orange) is the only trained 1.7B that breaks past the base on aggregate** — proof the environment trains a real, measurable behavior.*
 
 ---
 
@@ -219,13 +219,13 @@ We found four root causes silently capping every run:
   <img src="../plots/06_same_base_delta.png" alt="Same-base delta plot" width="90%"/>
 </p>
 
-> *Per-family delta: trained run minus same-size base. Run 7 (orange) sits above the base on event_planning by **+0.063** — the largest improvement of any run we shipped.*
+> *Per-family delta: trained run minus same-size base. **The β=0.3 trained model (orange) sits above the base on event_planning by +0.063** — the largest improvement of any run in the β sweep.*
 
-### 4.1 Run 7 vs 1.7B base — full per-family breakdown
+### 4.1 The trained model vs 1.7B base — full per-family breakdown
 
 <div align="center">
 
-| Family | 1.7B Base (μ / max) | Run 7 (μ / max) | Δ μ |
+| Family | 1.7B Base (μ / max) | Trained β=0.3 (μ / max) | Δ μ |
 |---|:---:|:---:|:---:|
 | event_planning | 0.138 / 0.522 | **0.201 / 0.510** | **+0.063** |
 | meeting_scheduling | 0.153 / 0.500 | 0.124 / 0.425 | -0.029 |
@@ -285,7 +285,7 @@ Per-family breakdown for every 1.7B configuration vs the base:
   <img src="../plots/01_reward_loss_curves.png" alt="Reward and KL divergence curves over training steps" width="100%"/>
 </p>
 
-> **LEFT** — Reward per training step (rolling-30 smoothed) for all 5 successful GRPO runs. Reward climbs from near-zero to peak values across 300-400 steps. **Run 7 (orange, β=0.3) reaches the highest peak** — proof the policy gradient is actively learning. The horizontal dashed line marks the 1.7B base eval avg (0.063) for reference. **RIGHT** — KL divergence from the reference policy for runs with β > 0. KL stays bounded at 0.005-0.015 throughout 300-400 steps — the anchor is active and preventing drift.
+> **LEFT** — Reward per training step (rolling-30 smoothed) for all 5 successful GRPO runs across the β sweep. Reward climbs from near-zero to peak values across 300-400 steps. **The β=0.3 run (orange) reaches the highest peak** — proof the policy gradient is actively learning. The horizontal dashed line marks the 1.7B base eval avg (0.063) for reference. **RIGHT** — KL divergence from the reference policy for runs with β > 0. KL stays bounded at 0.005-0.015 throughout — the anchor is active and preventing drift.
 
 #### Training diagnostics — convergence and behavior shift
 
@@ -293,7 +293,7 @@ Per-family breakdown for every 1.7B configuration vs the base:
   <img src="../plots/09_training_diagnostics.png" alt="Training diagnostics: reward variance and completion length over steps" width="100%"/>
 </p>
 
-> **LEFT** — Reward standard deviation over training step (rolling window). Shrinking variance = policy converging on a consistent strategy. The 1.7B runs all show std stabilizing around step 150-200, with Run 7 (orange) maintaining the highest absolute reward magnitude. **RIGHT** — Mean completion length per step. Run 7 generates ~500-700 token completions consistently — long enough to ask 3-4 questions and propose a structured plan, short enough to stay within the budget.
+> **LEFT** — Reward standard deviation over training step (rolling window). Shrinking variance = policy converging on a consistent strategy. The 1.7B runs all show std stabilizing around step 150-200, with **the β=0.3 trained model (orange) maintaining the highest absolute reward magnitude**. **RIGHT** — Mean completion length per step. The trained model generates ~500-700 token completions consistently — long enough to ask 3-4 questions and propose a structured plan, short enough to stay within the budget.
 
 #### Aggregate before/after — base vs trained, all models
 
@@ -301,7 +301,7 @@ Per-family breakdown for every 1.7B configuration vs the base:
   <img src="../plots/04_before_after.png" alt="Aggregate eval scores: base vs trained" width="100%"/>
 </p>
 
-> *Avg final score and completion rate, with each bar value labelled.* Read the 1.7B comparison left-to-right: **base 0.063 → Run 2 (β=0) 0.029 ↓ regression → Run 4 (β=0.2) 0.056 → Run 7 (β=0.3) 0.075 ↑ BEATS BASE**. The 4B base (purple) at 0.145 sets the unattainable ceiling for our compute budget.
+> *Avg final score and completion rate, with each bar value labelled.* Read the 1.7B β sweep left-to-right: **base 0.063 → β=0 (0.029 ↓ regression) → β=0.2 (0.056) → β=0.3 (0.075 ↑ BEATS BASE)**. The 4B base (purple) at 0.145 sets the unattainable ceiling for our compute budget.
 
 #### Per-family scores — every model on the same axes
 
@@ -309,7 +309,7 @@ Per-family breakdown for every 1.7B configuration vs the base:
   <img src="../plots/02_per_family_bars.png" alt="Per-family scores: random vs base vs all trained models" width="100%"/>
 </p>
 
-> *Avg final score per task family for every series.* The two solvable families are event_planning and meeting_scheduling; medical_intake and support_triage stay at 0 across every model (open future work). **Run 7 (orange) is the only trained 1.7B that beats its same-size base on event_planning**, lifting it from 0.138 → 0.201.
+> *Avg final score per task family for every series.* The two solvable families are event_planning and meeting_scheduling; medical_intake and support_triage stay at 0 across every model (open future work). **The β=0.3 trained model (orange) is the only trained 1.7B that beats its same-size base on event_planning**, lifting it from 0.138 → 0.201.
 
 #### Rubric component breakdown — what's actually carrying the score
 
@@ -625,7 +625,7 @@ ClarifyRL closes that gap with three things you can drop into any LLM-RL pipelin
 
 A research lab could plug ClarifyRL in tomorrow as the **humility-shaping stage** between SFT and a larger downstream RL pipeline.
 
-> *The contribution is the environment. The 1.7B Run 7 is just the proof that the idea trains a real, measurable behavior — and that the same recipe scales to whatever model size the lab cares about.*
+> *The contribution is the environment. The trained 1.7B model is just the proof that the idea trains a real, measurable behavior — and that the same recipe scales to whatever model size the lab cares about.*
 
 That is the opportunity we wanted to open. **The next move is yours.**
 

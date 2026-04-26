@@ -214,7 +214,7 @@ def _stat_chips_html() -> str:
 
     chips = []
     if best:
-        chips.append(chip(f"{best['avg_score']:.3f}", "Trained avg score (Run 7)", "#00f0ff", "rgba(0,240,255,0.4)"))
+        chips.append(chip(f"{best['avg_score']:.3f}", "Trained avg score (β=0.3)", "#00f0ff", "rgba(0,240,255,0.4)"))
     if base:
         gain = (best['avg_score'] - base['avg_score']) / base['avg_score'] * 100 if best and base['avg_score'] > 0 else 0
         chips.append(chip("+46%", "Event planning lift", "#ff00e5", "rgba(255,0,229,0.4)"))
@@ -296,7 +296,7 @@ def _story_flow_html() -> str:
                 onmouseover="{onhover}='0 0 24px rgba(57,255,20,0.22)';"
                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                 <div style="font-family:'Orbitron',monospace; color:#39ff14; font-size:0.72em; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;">3 &middot; The Proof</div>
-                <div style="font-size:1.15em; color:#fff; font-weight:600; margin-bottom:6px;">Run 7 beats the 1.7B base.</div>
+                <div style="font-size:1.15em; color:#fff; font-weight:600; margin-bottom:6px;">The trained model beats the 1.7B base.</div>
                 <div style="font-size:0.88em; color:#aaa; line-height:1.5;">Same model. Same data. <strong style="color:#39ff14;">Different reward = different agent.</strong> Validated across 50 held-out scenarios.</div>
             </div>
 
@@ -326,8 +326,8 @@ def _before_after_html() -> str:
             </div>
             <div style="{right_box}">
                 <div style="text-align:center; margin-bottom:10px;">
-                    <span style="font-family:'Orbitron',monospace; color:#39ff14; font-size:1em; font-weight:700;">TRAINED 1.7B (Run 7)</span>
-                    <span style="color:#888; font-size:0.8em;"> &mdash; β=0.3 KL anchor</span>
+                    <span style="font-family:'Orbitron',monospace; color:#39ff14; font-size:1em; font-weight:700;">TRAINED 1.7B</span>
+                    <span style="color:#888; font-size:0.8em;"> &mdash; GRPO + β=0.3 KL anchor</span>
                 </div>
                 <p style="{step_s}">Step 1: ask_question("how many guests?") &rarr; 20</p>
                 <p style="{step_s}">Step 2: ask_question("indoor or outdoor?") &rarr; office</p>
@@ -525,9 +525,9 @@ Sequential(
 """
 
 _RESULTS_MD = """
-## Run 7 Beats the Base Model
+## The Trained Model Beats the Base
 
-**avg_score 0.075 vs 1.7B base 0.063 — a 19% improvement.** Event planning: 0.201 vs base 0.138 (+46%).
+**avg_score 0.075 vs 1.7B base 0.063 — a 19% improvement.** Event planning: 0.201 vs base 0.138 (+46%). The winning configuration is **GRPO with KL anchor β=0.3**.
 
 | Beta | Run | Avg Score | Event Planning | Key Finding |
 |------|-----|-----------|----------------|-------------|

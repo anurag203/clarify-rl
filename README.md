@@ -20,7 +20,7 @@ app_port: 7860
 [![Blog](https://img.shields.io/badge/Blog-Blog.md-orange)](https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb)
 [![Demo](https://img.shields.io/badge/HF%20Space-Interactive%20Demo-success)](https://huggingface.co/spaces/anurag203/clarify-rl-demo)
-[![Run 7 model](https://img.shields.io/badge/HF%20Model-Run%207%20BEATS%20BASE-39ff14)](https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7)
+[![Trained model](https://img.shields.io/badge/HF%20Model-Trained%20%CE%B2%3D0.3%20BEATS%20BASE-39ff14)](https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7)
 
 ---
 
@@ -30,7 +30,7 @@ app_port: 7860
 
 **The validation**: trained Qwen3-1.7B with GRPO inside ClarifyRL. The trained model beats its own base by **+19%** on 50 held-out scenarios. Same model, same data — the environment changed only the behavior.
 
-| Metric | 1.7B Base | Run 7 (Trained) | Improvement |
+| Metric | 1.7B Base | Trained (β=0.3) | Improvement |
 |---|---|---|---|
 | Avg score | 0.063 | **0.075** | **+19%** |
 | Event planning | 0.138 | **0.201** | **+46%** |
@@ -38,7 +38,7 @@ app_port: 7860
 
 ![Training progression and evaluation improvement](plots/08_training_progression.png)
 
-> *Reward climbs over training (left) for all 5 successful GRPO runs. The right panel shows the eval before/after pair for each run. Run 7 (orange) is the only trained run that breaks past the base on aggregate — proof the environment trains a real, measurable behavior.*
+> *Reward climbs over training (left) for all 5 successful GRPO runs across the β sweep. The right panel shows the eval before/after pair for each run. **The β=0.3 trained model (orange) is the only one that breaks past the base on aggregate** — proof the environment trains a real, measurable behavior.*
 
 ---
 
@@ -59,7 +59,7 @@ For the full story, read **[Blog.md](https://huggingface.co/spaces/agarwalanu310
 | **HF Space (env)** | https://huggingface.co/spaces/agarwalanu3103/clarify-rl |
 | **Blog writeup** | [Blog.md](https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md) |
 | **Training notebook** | [Colab](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb) |
-| **Best trained model (Run 7)** | https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7 |
+| **Best trained model (β=0.3 KL anchor)** | https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7 |
 | **Interactive demo** | https://huggingface.co/spaces/anurag203/clarify-rl-demo |
 | **GitHub repo** | https://github.com/anurag203/clarify-rl |
 
@@ -131,9 +131,9 @@ This rubric is hard to game: a model that fills JSON without asking is penalized
 
 > **The β sweep tells the story.** β=0 collapses, β=0.2-0.3 is the sweet spot, β=1.0 is too conservative. Same model, same data — only β changes between rows. The 4B base sets a real ceiling we did not have time to chase with GRPO; logged as future work.
 
-![Same-base delta plot — Run 7 above the base on event_planning](plots/06_same_base_delta.png)
+![Same-base delta plot — the trained model above the base on event_planning](plots/06_same_base_delta.png)
 
-> *Per-family delta (trained run minus same-size base) for each trained run. Run 7 (orange) on event_planning is the highest bar above zero — the 1.7B model trained to beat its own base on the family with the most ambiguity.*
+> *Per-family delta (trained run minus same-size base) for each trained run. **The β=0.3 trained model (orange) on event_planning is the highest bar above zero** — the 1.7B trained to beat its own base on the family with the most ambiguity.*
 
 ![Per-run × per-family scoreboard](plots/07_runs_summary_table.png)
 
@@ -149,14 +149,14 @@ Every PNG below is committed in [`plots/`](plots/) and rendered live on the [HF 
 
 ![Reward and KL curves over training steps](plots/01_reward_loss_curves.png)
 
-> **LEFT — Reward per training step (rolling-30 smoothed) for all 5 successful GRPO runs.** Reward climbs from near-zero toward 0.5+ across 300-400 steps. Run 7 (orange) reaches the highest peak. The horizontal dashed line marks the 1.7B base eval avg (0.063) for reference.
+> **LEFT — Reward per training step (rolling-30 smoothed) for all 5 successful GRPO runs across the β sweep.** Reward climbs from near-zero toward 0.5+ across 300-400 steps. The β=0.3 trained model (orange) reaches the highest peak. The horizontal dashed line marks the 1.7B base eval avg (0.063) for reference.
 > **RIGHT — KL divergence from the reference policy.** For runs with β > 0, KL stays bounded at 0.005-0.015 throughout training — the anchor is active and preventing drift.
 
 ### 2. Per-family score bars — every model on the same axes
 
 ![Per-family scores](plots/02_per_family_bars.png)
 
-> *Avg final score per task family for every series we evaluated: random policy → base models → all 5 trained runs.* Run 7 (orange) wins on event_planning among 1.7B configurations. The 4B base (purple) sets the ceiling.
+> *Avg final score per task family for every series we evaluated: random policy → base models → all 5 trained runs.* The β=0.3 trained model (orange) wins on event_planning among 1.7B configurations. The 4B base (purple) sets the ceiling.
 
 ### 3. Rubric component breakdown — what's actually carrying the score
 
@@ -168,7 +168,7 @@ Every PNG below is committed in [`plots/`](plots/) and rendered live on the [HF 
 
 ![Before vs after aggregate metrics](plots/04_before_after.png)
 
-> *Avg final score and completion rate, with each bar value labelled.* Read the 1.7B comparison left-to-right: **base 0.063 → Run 2 0.029 ↓ → Run 4 0.056 → Run 7 0.075 ✅ BEATS BASE**.
+> *Avg final score and completion rate, with each bar value labelled.* Read the 1.7B β sweep left-to-right: **base 0.063 → β=0 (0.029 ↓) → β=0.2 (0.056) → β=0.3 (0.075 ✅ BEATS BASE)**.
 
 ### 5. Question efficiency — does the trained agent ask fewer, better questions?
 
@@ -187,7 +187,7 @@ Every PNG below is committed in [`plots/`](plots/) and rendered live on the [HF 
 ![Training diagnostics](plots/09_training_diagnostics.png)
 
 > **LEFT — Reward standard deviation over training step.** Shrinking variance = policy converging on a consistent strategy. The 1.7B runs stabilize around step 150-200.
-> **RIGHT — Mean completion length per step.** Run 7 (orange) generates ~500-700 token completions consistently — long enough to ask 3-4 questions and propose a plan.
+> **RIGHT — Mean completion length per step.** The β=0.3 trained model (orange) generates ~500-700 token completions consistently — long enough to ask 3-4 questions and propose a plan.
 
 ---
 
