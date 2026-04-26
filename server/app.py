@@ -7,10 +7,12 @@ Run locally with:  uvicorn server.app:app --host 0.0.0.0 --port 8000
 
 from __future__ import annotations
 
+import gradio as gr
 from openenv.core.env_server.http_server import create_app
 from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservation
 
 from server.clarify_environment import ClarifyEnvironment
+from server.gradio_ui import build_gradio_ui
 
 
 # max_concurrent_envs=64: each ClarifyEnvironment is in-memory only (no GPU
@@ -24,6 +26,9 @@ app = create_app(
     env_name="clarify_rl",
     max_concurrent_envs=64,
 )
+
+_gradio_demo = build_gradio_ui()
+app = gr.mount_gradio_app(app, _gradio_demo, path="/")
 
 
 def main() -> None:
