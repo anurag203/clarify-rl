@@ -2,7 +2,7 @@
 
 > **Update this file at the END of every session.** Keep it short (≤ 100 lines). For history, see `SESSION_LOG.md`.
 
-**Last updated**: 2026-04-26 08:25 IST — **Phase 12: Headline improvement plots + W&B de-link.** Added 3 new plots to the deck: `08_training_progression.png` (headline "reward climbs over training" + before/after eval bars — the "improvement graph" judges want), `09_training_diagnostics.png` (reward variance convergence + completion length shift), and improved `01_reward_loss_curves.png` (replaced loss panel with KL divergence, rolling-30 smoothing, end-value annotations). Dropped all W&B links from README badges, submission asset table, and blog TL;DR — training metrics are now fully self-hosted from `log_history.json` files in `outputs/`. README restructured: plot 08 is now the first visual a judge sees (right after the demo screenshot, before the Problem section). Run 5 (1.7B + GRPO + β=0.5, a100-large) awaiting HF token to launch — would give a 3-point β sweep (0 / 0.2 / 0.5). ~8.5 h to the 5 PM IST deadline.
+**Last updated**: 2026-04-26 11:15 IST — **Phase 15: Training fundamentals fixed + Run 6 completed.** Diagnosed 4 root causes of eval regression across Runs 1-5 (example contamination in prompt, sparse reward signal, missing required-keys hint, train/eval role mismatch). Fixed all 4 in `train_grpo.py` and `inference.py`. Launched Run 6 (1.7B, β=1.0, A100-large, Kanan account) — training rewards were non-zero from step 1 (0.12 first step) and peaked at 0.27, dramatically better than any previous run. Run 6 eval: avg_score=0.0607, completion_rate=16% — nearly matches 1.7B base (0.063 on same v5 prompts). All plots regenerated with Run 6 included. ~5.5 h to the 5 PM IST deadline.
 
 ## Current phase
 

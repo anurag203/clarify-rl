@@ -214,6 +214,14 @@ RESUME_FROM_CKPT = _env("RESUME_FROM_CKPT", "")
 DIFFICULTIES = ["easy", "medium", "hard"]
 DIFFICULTY_WEIGHTS = [0.5, 0.3, 0.2]
 
+REQUIRED_KEYS_BY_FAMILY: dict[str, list[str]] = {
+    "coding_requirements": ["stack", "scale", "auth", "datastore"],
+    "medical_intake": ["primary_symptom", "duration", "severity"],
+    "support_triage": ["order_id", "item_issue", "refund_or_replace"],
+    "meeting_scheduling": ["participants", "date", "time"],
+    "event_planning": ["event_type", "date", "guest_count", "venue"],
+}
+
 PROMPT = """You are a helpful assistant that books and plans things for users.
 The user's request will be intentionally ambiguous — you do NOT yet have all the information needed to make a good plan.
 
@@ -223,14 +231,15 @@ You have three tools:
   - get_task_info(): re-read the original user request.
 
 Strategy:
-  1. Identify which fields the user has NOT specified.
-  2. Use ask_question, ONE question per turn, to fill in just those fields.
-  3. When you have enough info, call propose_plan with a JSON string.
+  1. Read the required plan fields listed in the task description.
+  2. Use ask_question to ask about EACH required field you do not already know.
+  3. When you have enough info, call propose_plan with a JSON string containing ALL required fields.
 
 Rules:
   - Be efficient. Each unnecessary question costs reward.
+  - Your plan MUST include every required field listed in the task. Missing fields score zero.
   - NEVER include fields in your plan that you weren't told about. No hallucinating values.
-  - The `plan` argument MUST be a JSON STRING (not a dict). Example: propose_plan(plan='{"start_time": "2pm", "duration": "30min"}').
+  - The `plan` argument MUST be a JSON STRING (not a dict). Use the exact field names from the required fields list.
 """
 
 # ---------------------------------------------------------------------------
@@ -328,6 +337,9 @@ class ClarifyEnv:
         self._ws = None
         self.reward: float = 0.0
         self.done: bool = False
+        self.plan_submitted: bool = False
+        self._family: str = ""
+        self._required_keys: list[str] = []
 
     def _open(self, retries: int = 3) -> None:
         from websockets.sync.client import connect as _ws_connect
@@ -393,6 +405,9 @@ class ClarifyEnv:
         self._close()
         self.reward = 0.0
         self.done = False
+        self.plan_submitted = False
+        self._family = ""
+        self._required_keys = []
         task_id = random.choices(DIFFICULTIES, weights=DIFFICULTY_WEIGHTS, k=1)[0]
 
         max_attempts = 6  # 0.5+1+2+4+8+16 = 31.5 s total
@@ -429,11 +444,15 @@ class ClarifyEnv:
             family = info.get("family", "")
             max_steps = info.get("max_steps", 10)
             questions_remaining = info.get("questions_remaining", 6)
+            self._family = family
+            self._required_keys = REQUIRED_KEYS_BY_FAMILY.get(family, [])
+            required_keys_str = ", ".join(self._required_keys) if self._required_keys else "unknown"
             return (
                 f"USER REQUEST: {request_text}\n"
                 f"Task family: {family}\n"
+                f"Required plan fields: {required_keys_str}\n"
                 f"You have {max_steps} turns and may ask up to {questions_remaining} clarifying questions.\n"
-                f"Use the tools to clarify what is missing, then call propose_plan with a JSON string."
+                f"Use the tools to ask about each required field, then call propose_plan with a JSON string containing ALL required fields."
             )
 
         self.done = True
@@ -484,13 +503,13 @@ class ClarifyEnv:
         """Submit your final plan. The plan must be a JSON STRING. Ends the episode.
 
         Args:
-            plan: A JSON-encoded string with the plan fields. For example:
-                '{"start_time": "2pm", "duration": "30min", "meeting_type": "video"}'.
+            plan: A JSON-encoded string with the plan fields.
                 MUST be a string, not a dict.
 
         Returns:
             The final score and per-component breakdown.
         """
+        self.plan_submitted = True
         if not isinstance(plan, str):
             try:
                 plan = json.dumps(plan)
@@ -513,14 +532,18 @@ class ClarifyEnv:
         """Re-read the original user request.
 
         Returns:
-            The user's request, task family, and remaining question budget.
+            The user's request, task family, required fields, and remaining question budget.
         """
         out = self._step_raw("get_task_info", {})
         if "error" in out:
             return f"Error: {out['error']}"
+        family = out.get("family", self._family)
+        rk = REQUIRED_KEYS_BY_FAMILY.get(family, self._required_keys)
+        required_keys_str = ", ".join(rk) if rk else "unknown"
         return (
             f"Request: {out.get('request', '')}\n"
-            f"Family: {out.get('family', '')}\n"
+            f"Family: {family}\n"
+            f"Required plan fields: {required_keys_str}\n"
             f"Questions remaining: {out.get('questions_remaining', '?')}"
         )
 
@@ -531,8 +554,19 @@ class ClarifyEnv:
             pass
 
 
+NO_PLAN_PENALTY = -0.1
+PLAN_SUBMISSION_BONUS = 0.05
+
+
 def reward_func(environments, **kwargs) -> list[float]:
-    return [float(env.reward) for env in environments]
+    rewards = []
+    for env in environments:
+        if env.plan_submitted:
+            r = float(env.reward) + PLAN_SUBMISSION_BONUS
+        else:
+            r = NO_PLAN_PENALTY
+        rewards.append(r)
+    return rewards
 
 
 # ---------------------------------------------------------------------------
@@ -609,7 +643,7 @@ def main() -> None:
 
     num_train_episodes = max(2000, MAX_STEPS * num_gen * GRAD_ACCUM_STEPS * 2)
     dataset = Dataset.from_dict(
-        {"prompt": [[{"role": "user", "content": PROMPT}] for _ in range(num_train_episodes)]}
+        {"prompt": [[{"role": "system", "content": PROMPT}] for _ in range(num_train_episodes)]}
     )
     print(f"Dataset: {len(dataset)} episodes (≈ {MAX_STEPS * num_gen * GRAD_ACCUM_STEPS} consumed)")
 

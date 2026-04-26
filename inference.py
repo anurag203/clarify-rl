@@ -58,16 +58,24 @@ SYSTEM_PROMPT = (
     "  - get_task_info(): re-read the original user request.\n"
     "\n"
     "Strategy:\n"
-    "  1. Identify which fields the user has NOT specified.\n"
-    "  2. Use ask_question, ONE question per turn, to fill in just those fields.\n"
-    "  3. When you have enough info, call propose_plan with a JSON string.\n"
+    "  1. Read the required plan fields listed in the task description.\n"
+    "  2. Use ask_question to ask about EACH required field you do not already know.\n"
+    "  3. When you have enough info, call propose_plan with a JSON string containing ALL required fields.\n"
     "\n"
     "Rules:\n"
     "  - Be efficient. Each unnecessary question costs reward.\n"
+    "  - Your plan MUST include every required field listed in the task. Missing fields score zero.\n"
     "  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n"
-    "  - The `plan` argument MUST be a JSON STRING (not a dict). "
-    "Example: propose_plan(plan='{\"start_time\": \"2pm\", \"duration\": \"30min\"}').\n"
+    "  - The `plan` argument MUST be a JSON STRING (not a dict). Use the exact field names from the required fields list.\n"
 )
+
+REQUIRED_KEYS_BY_FAMILY: dict[str, list[str]] = {
+    "coding_requirements": ["stack", "scale", "auth", "datastore"],
+    "medical_intake": ["primary_symptom", "duration", "severity"],
+    "support_triage": ["order_id", "item_issue", "refund_or_replace"],
+    "meeting_scheduling": ["participants", "date", "time"],
+    "event_planning": ["event_type", "date", "guest_count", "venue"],
+}
 
 POLICY_PLANS = {
     "easy": [
@@ -664,12 +672,17 @@ async def run_task_async(llm_client: Optional[OpenAI], task_id: str, task_title:
 
             request_text = initial_data.get("request", str(initial_data))
             max_steps = initial_data.get("max_steps", 10)
+            family = initial_data.get("family", "")
+            questions_remaining = initial_data.get("questions_remaining", 6)
+            rk = REQUIRED_KEYS_BY_FAMILY.get(family, [])
+            required_keys_str = ", ".join(rk) if rk else "unknown"
 
             initial_context = (
-                f"USER REQUEST:\n{request_text}\n\n"
-                f"You have {max_steps} steps. Available tools: "
-                f"ask_question(question), propose_plan(plan), get_task_info()\n"
-                f"Ask clarifying questions to gather missing info, then propose a plan."
+                f"USER REQUEST: {request_text}\n"
+                f"Task family: {family}\n"
+                f"Required plan fields: {required_keys_str}\n"
+                f"You have {max_steps} turns and may ask up to {questions_remaining} clarifying questions.\n"
+                f"Use the tools to ask about each required field, then call propose_plan with a JSON string containing ALL required fields."
             )
 
             messages = [

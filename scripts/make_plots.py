@@ -65,6 +65,7 @@ _LABEL_COLORS: dict[str, str] = {
     "1.7B base":                "#66bb6a",   # mid green
     "1.7B GRPO no-KL (Run 2)":  "#e53935",   # red — the regression run
     "1.7B GRPO +KL (Run 4)":    "#2e7d32",   # deep green — KL-anchored hero
+    "1.7B GRPO fixed (Run 6)":  "#0d47a1",   # dark blue — fixed fundamentals
     "4B base":                  "#5e35b1",   # purple — ceiling marker
     "4B-instruct":              "#00838f",   # teal
     "4B GRPO (Run 3)":          "#ff6f00",   # amber

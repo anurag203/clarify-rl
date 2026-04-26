@@ -31,6 +31,7 @@ _LABEL_COLORS: dict[str, str] = {
     "1.7B base":                "#66bb6a",
     "1.7B GRPO no-KL (Run 2)":  "#e53935",
     "1.7B GRPO +KL (Run 4)":    "#2e7d32",
+    "1.7B GRPO fixed (Run 6)":  "#0d47a1",
     "4B base":                  "#5e35b1",
     "4B-instruct":              "#00838f",
     "4B GRPO (Run 3)":          "#ff6f00",

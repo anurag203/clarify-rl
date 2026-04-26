@@ -87,6 +87,22 @@
       "max_support_triage": 0.0
     },
     {
+      "label": "1.7B GRPO fixed (Run 6)",
+      "model": "Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6",
+      "n": 50,
+      "avg_score": 0.060729292929292925,
+      "format_pass_rate": 0.0,
+      "completion_rate": 0.16,
+      "fam_event_planning": 0.11901094276094276,
+      "fam_medical_intake": 0.0,
+      "fam_meeting_scheduling": 0.1462121212121212,
+      "fam_support_triage": 0.0,
+      "max_event_planning": 0.3784090909090909,
+      "max_medical_intake": 0.0,
+      "max_meeting_scheduling": 0.6,
+      "max_support_triage": 0.0
+    },
+    {
       "label": "4B base",
       "model": "Qwen/Qwen3-4B",
       "n": 50,

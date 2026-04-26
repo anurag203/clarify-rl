@@ -46,8 +46,8 @@ Everything else (model cards, slide deck, full blog) is in the **Submission asse
 
 ![ClarifyRL — Training progression and evaluation improvement](plots/08_training_progression.png)
 
-> **LEFT — Reward climbs over training.** All 3 GRPO runs start near 0 reward and climb as policy gradient pushes the agent toward asking clarifying questions instead of hallucinating. Run 1 (0.6B, blue) reaches 0.046; Run 2 (1.7B, red) reaches 0.022; Run 4 (1.7B + KL anchor, green) reaches 0.007 — lower but stabler, anchored by the β=0.2 penalty. The dashed green line is the 1.7B base eval average (0.067) for reference.
-> **RIGHT — Eval score before vs after training.** Grey = base (untrained), color = after GRPO. Run 1 strictly improves (+0.008 on 0.6B). Run 2 regresses (-0.038 on 1.7B, no KL anchor). Run 4 recovers most of the gap (-0.011) and crucially beats base on `event_planning` (0.175 vs 0.138). All training metrics are self-hosted in this repo — no external dashboard needed.
+> **LEFT — Reward climbs over training.** All 4 GRPO runs show reward dynamics over 300 training steps. Run 6 (dark blue, fixed fundamentals) has the strongest reward signal with non-zero rewards from step 1 and peaks at 0.27 — the first run where the training reward curve is unambiguously healthy. Earlier runs (1/2/4) had sparser rewards due to prompt and reward function issues that Run 6 fixed.
+> **RIGHT — Eval score before vs after training.** Grey = base (untrained), color = after GRPO. Run 6 (0.061) nearly matches the 1.7B base (0.063), closing the regression gap that plagued earlier runs. Run 4 beats base on `event_planning` (0.175 vs 0.138). Run 6 recovers `meeting_scheduling` (0.146 mean, 0.600 max). All training metrics are self-hosted in this repo.
 
 ---
 
@@ -127,8 +127,8 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 - **Run 1 (0.6B, 300 steps, β=0)**: base 0.0000 → trained **0.0076**. *Unlocks* `event_planning` family (0.000 → 0.032 mean, **0 → 0.382 max**).
 - **Run 2 (1.7B, 400 steps, β=0)**: base 0.0669 → trained **0.0286 ↓**. Aggregate regression. Concentrated capability: *lost* `event_planning` (0.138 → 0), *raised* `meeting_scheduling` ceiling 0.500 → **0.725**.
 - **Run 4 (1.7B, 300 steps, β=0.2 KL anchor, lr=5e-7)** ← *the controlled comparison*: same model & data as Run 2, with regularization. Aggregate **0.0560** (recovers most of the regression). `event_planning` recovers 0.000 → **0.175 — beats base**. Trade-off: meeting peak drops 0.725 → 0.350. KL stayed bounded 0.005-0.010 throughout training, confirming the anchor was active.
+- **Run 6 (1.7B, 300 steps, β=1.0, fixed fundamentals)** ← *training pipeline overhaul*: fixed 4 root causes in the training loop (example contamination in prompt, sparse reward signal, missing required-keys hint, train/eval role mismatch). Result: training reward was **non-zero from step 1** (vs stuck at 0 in Run 5) and reached **0.27 peak** (vs 0.01 for Run 4). Eval: aggregate **0.0607** — nearly matches base (0.063 on same prompts), with `meeting_scheduling` **0.146 mean / 0.600 max**. The first run where the training reward curve is unambiguously healthy.
 - **Qwen3-4B base (no GRPO)**: avg **0.1446**, max **0.819** on `meeting_scheduling` — the highest single-scenario score we've seen at any size; sets the real ceiling.
-- *Future work:* Run 3 (4B + GRPO) was queued but canceled at 48 min in HF Jobs SCHEDULING — once Run 4's KL-anchor finding was in we didn't want the extra schedule risk against the deadline. The next-step experiment given Run 4's result would be **4B + β=0.2 + half-LR** (see [`docs/blog.md` §7b](docs/blog.md)).
 
 **The headline finding: GRPO without a KL anchor causes catastrophic capability collapse on stronger bases. Adding β=0.2 cleanly fixes it.** Run 4 recovered the family Run 2 destroyed *and beat the base on it*, on the same model with the same data. That's the central result. Format pass = 0% across every model — semantic field-match + info-gain carry the score.
 
@@ -144,17 +144,18 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 | Qwen3-1.7B base | 0.0669 | 18% | — |
 | Qwen3-1.7B GRPO (Run 2, β=0) | 0.0286 ↓ | 6% | yes |
 | **Qwen3-1.7B GRPO (Run 4, β=0.2)** | **0.0560 ✅** | 14% | yes |
+| **Qwen3-1.7B GRPO (Run 6, β=1.0, fixed)** | **0.0607 ✅** | 16% | yes |
 | Qwen3-4B-Instruct | 0.0399 | 6% | — |
 | **Qwen3-4B base** ← real ceiling | **0.1446** | **24%** | — |
 
-**Per-family score — KL anchor reading (Run 2 vs Run 4)**
+**Per-family score — KL anchor + training fix progression (Run 2 → Run 4 → Run 6)**
 
-| Family | 1.7B base (μ/max) | **Run 2 no-KL (μ/max)** | **Run 4 +KL (μ/max)** | 4B base (μ/max) |
-|---|---|---|---|---|
-| event_planning | 0.138 / 0.522 | **0.000 ❌** / 0.000 | **0.175 ✅** / 0.510 | 0.340 / 0.795 |
-| meeting_scheduling | 0.153 / 0.500 | 0.130 / **0.725 ↑↑** | 0.064 / 0.350 | 0.287 / **0.819** |
-| medical_intake | 0.000 | 0.000 | 0.000 | 0.000 |
-| support_triage | 0.000 | 0.000 | 0.000 | 0.000 |
+| Family | 1.7B base (μ/max) | **Run 2 no-KL (μ/max)** | **Run 4 +KL (μ/max)** | **Run 6 fixed (μ/max)** | 4B base (μ/max) |
+|---|---|---|---|---|---|
+| event_planning | 0.138 / 0.522 | **0.000 ❌** / 0.000 | **0.175 ✅** / 0.510 | 0.119 / 0.378 | 0.340 / 0.795 |
+| meeting_scheduling | 0.153 / 0.500 | 0.130 / **0.725 ↑↑** | 0.064 / 0.350 | **0.146 ✅** / 0.600 | 0.287 / **0.819** |
+| medical_intake | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| support_triage | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
 
 > **The 4B base — without any RL — is the strongest model on every solvable family.** That sets the real ceiling for any future 4B GRPO run. Instruct-tuning *hurt* Qwen3-4B for this multi-turn tool-using task (4B-Inst < 4B base everywhere).
 
@@ -165,7 +166,8 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 | Submission asset | Link |
 |---|---|
 | HF Space (env) | https://huggingface.co/spaces/agarwalanu3103/clarify-rl |
-| **⭐ Trained model — Qwen3-1.7B (Run 4, β=0.2 KL anchor, hero)** | **https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2** |
+| **⭐ Trained model — Qwen3-1.7B (Run 6, β=1.0, fixed fundamentals)** | **https://huggingface.co/Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6** |
+| Trained model — Qwen3-1.7B (Run 4, β=0.2 KL anchor) | https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2 |
 | Trained model — Qwen3-1.7B (Run 2, β=0, ablation regression) | https://huggingface.co/anurag203/clarify-rl-run2-qwen3-1.7b-no-kl |
 | Trained model — Qwen3-0.6B (Run 1, weak-base baseline) | https://huggingface.co/anurag203/clarify-rl-run1-qwen3-0.6b-no-kl |
 | Model cards (rich, in-repo) | [`docs/model_cards/`](docs/model_cards/) |
