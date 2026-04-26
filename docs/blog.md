@@ -1,27 +1,34 @@
 # ClarifyRL: Teaching Small LLMs to Ask Before They Act
 
-> **TL;DR.** We ran a controlled 3-trained-run GRPO experiment across Qwen3-0.6B / 1.7B inside an OpenEnv environment that rewards asking the *right* clarifying questions instead of fabricating values. **Headline result: the KL anchor (β=0.2) cleanly fixed Run 2's catastrophic regression.** Run 2 (1.7B, β=0) collapsed event_planning from 0.138 → **0.000** while concentrating capability into one peak (meeting_scheduling max 0.500 → **0.725**). Run 4 (same model, β=0.2, half LR) **recovers event_planning to 0.175 — beating the base** — at the cost of giving up the 0.725 meeting peak (now 0.350). Aggregate score went 0.029 (no-KL) → **0.056** (+KL), nearly back to 1.7B base 0.067. **Surprise discovery:** Qwen3-4B *base* (no GRPO) is the strongest model at every solvable family — avg 0.1446, max 0.819 on `meeting_scheduling`. Instruct-tuning *hurt* the 4B (4B-Inst avg 0.0399). A planned Run 3 (4B + GRPO) was canceled at 48 min in HF Jobs scheduling queue — once the KL-anchor finding from Run 4 was in hand the marginal value of a 4B confirmation didn't justify pushing into the deadline; logged as future work in §7b. Along the way we **diagnosed and fixed five eval-pipeline bugs** that were silently flattening every model to 0 — see section 6.
->
-> **Code:** [GitHub](https://github.com/anurag203/clarify-rl) · **Interactive demo (replay + live chat):** [anurag203/clarify-rl-demo](https://huggingface.co/spaces/anurag203/clarify-rl-demo) · **Env Space:** [agarwalanu3103/clarify-rl](https://huggingface.co/spaces/agarwalanu3103/clarify-rl) · **Training metrics:** self-hosted in [`plots/08_training_progression.png`](../plots/08_training_progression.png) and [`plots/01_reward_loss_curves.png`](../plots/01_reward_loss_curves.png) · **⭐ Run-4 (1.7B, β=0.2 KL anchor):** [anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2](https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2) · **Run-2 (1.7B, β=0):** [anurag203/clarify-rl-run2-qwen3-1.7b-no-kl](https://huggingface.co/anurag203/clarify-rl-run2-qwen3-1.7b-no-kl) · **Run-1 (0.6B, β=0):** [anurag203/clarify-rl-run1-qwen3-0.6b-no-kl](https://huggingface.co/anurag203/clarify-rl-run1-qwen3-0.6b-no-kl)
->
-> **Team Bhole Chature** — Anurag Agarwal + Kanan Agarwal · Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026
+You text your assistant: *"Plan a birthday party."*
 
-> **🎯 Play the demo:** [`anurag203/clarify-rl-demo`](https://huggingface.co/spaces/anurag203/clarify-rl-demo)
-> Three tabs: **Replay viewer** (browse all 50-scenario rollouts for any of the 6 evaluated models — no GPU needed, always-on), **Run 2 vs Run 4** (same scenario, side-by-side, sorted by Δ score so the biggest β-flips jump out), and **Live chat** (the Run 4 checkpoint runs the agent loop on whatever vague request you type — CPU, ~30-60s/turn).
+It comes back with a venue you never mentioned, a guest list it made up, and a budget pulled from thin air. Everything looks polished. Everything is wrong.
+
+This is the default mode of every LLM today. They are trained to sound confident, not to say *"wait — how many people are coming?"*
+
+We thought: what if we could train that reflex? Not the confidence. The pause. The question.
+
+So we built **ClarifyRL** — an RL environment where the only way to score well is to **ask the right questions first**, then act on what you actually learned. We trained a 1.7B model across 7 GRPO runs, discovered that a simple KL anchor prevents catastrophic forgetting, and diagnosed 4 hidden bugs in our own training pipeline along the way.
+
+Here is what we found.
+
+**Team Bhole Chature** — Anurag Agarwal + Kanan Agarwal · Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026
+
+> **Links:** [GitHub](https://github.com/anurag203/clarify-rl) · [Env Space](https://huggingface.co/spaces/agarwalanu3103/clarify-rl) · [Interactive Demo](https://huggingface.co/spaces/anurag203/clarify-rl-demo) · [Colab](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb) · [Run 6 model](https://huggingface.co/Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6) · [Run 4 model](https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2)
 
 ![Training progression and evaluation improvement](../plots/08_training_progression.png)
-
-> *Training reward climbs over 300 GRPO steps for all 3 runs (left). Eval before/after pairs show Run 1 strictly improving on 0.6B, Run 2 regressing on 1.7B without KL anchor, and Run 4 recovering most of the gap with β=0.2 (right).*
 
 ---
 
 ## 1. The problem
 
-Today's LLMs hallucinate when given vague instructions because they were trained to produce answers, not to recognize when they don't have enough information. Ask a current frontier model "schedule a sync" and you'll get a meeting at a guessed time, with a guessed duration, in a guessed room — none of it grounded in what the user actually wanted.
+You ask a model *"schedule a sync"* and it gives you a meeting at 2pm, 30 minutes, in a room you have never booked. It guessed every field. None of it came from you.
 
-The cure is simple: **ask one targeted question before guessing**. But this is exactly the behavior current post-training pipelines suppress. RLHF rewards confident, helpful-looking outputs; calibrated uncertainty is a side channel at best.
+This happens because LLMs are trained to produce answers, not to notice when they do not have the information. RLHF rewards confident-sounding outputs. Saying "I don't know, let me ask" is punished, not rewarded.
 
-We built ClarifyRL to put epistemic humility on the main reward path.
+We wanted to flip that. Make the model earn its score by asking the right questions first, then planning based on real answers. Not guesses. Not hallucinations. Real information from the user.
+
+That is ClarifyRL.
 
 ## 2. The environment
 
