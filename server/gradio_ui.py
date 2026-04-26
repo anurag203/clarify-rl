@@ -109,38 +109,42 @@ def _load_sample_traces() -> list[dict[str, Any]]:
     return traces
 
 
-def _format_trace_as_chat(trace: dict) -> list[dict]:
-    """Convert an eval trace into Gradio chatbot message format."""
-    messages: list[dict] = []
+def _format_trace_as_chat(trace: dict) -> list[list]:
+    """Convert an eval trace into Gradio chatbot tuple format [(user, bot), ...]."""
+    pairs: list[list] = []
     scenario_id = trace.get("scenario_id", "unknown")
     family = trace.get("family", "unknown")
     score = trace.get("final_score", 0)
 
-    messages.append({"role": "assistant", "content":
-        f"**Scenario**: `{scenario_id}` | **Family**: `{family}` | **Final Score**: `{score:.3f}`\n\n---"})
+    pairs.append([None,
+        f"**Scenario**: `{scenario_id}` | **Family**: `{family}` | **Final Score**: `{score:.3f}`"])
 
     turns = trace.get("turns", trace.get("conversation", []))
     if isinstance(turns, list):
+        pending_user = None
         for t in turns:
             role = t.get("role", "system")
-            content = t.get("content", str(t))
+            content = t.get("content", str(t))[:500]
             if role in ("user", "tool_result", "environment"):
-                messages.append({"role": "user", "content": content[:500]})
+                pending_user = content
             elif role in ("assistant", "agent", "model"):
-                messages.append({"role": "assistant", "content": content[:500]})
+                pairs.append([pending_user, content])
+                pending_user = None
+        if pending_user:
+            pairs.append([pending_user, None])
 
     breakdown = trace.get("score_breakdown", {})
     if breakdown:
         bd_lines = "\n".join(f"  - **{k}**: {v:.3f}" for k, v in breakdown.items())
-        messages.append({"role": "assistant", "content": f"**Rubric Breakdown**:\n{bd_lines}"})
+        pairs.append([None, f"**Rubric Breakdown**:\n{bd_lines}"])
 
-    return messages
+    return pairs
 
 
-async def _run_live_episode(difficulty: str) -> list[dict]:
+async def _run_live_episode(difficulty: str) -> list[list]:
     """Run a live episode against the local env via WebSocket."""
     import websockets
-    messages: list[dict] = []
+    pairs: list[list] = []
     try:
         async with websockets.connect("ws://localhost:8000/ws", open_timeout=5) as ws:
             await ws.send(json.dumps({"type": "reset", "data": {"task_id": difficulty}}))
@@ -157,9 +161,10 @@ async def _run_live_episode(difficulty: str) -> list[dict]:
             family = info.get("family", "unknown")
             max_steps = info.get("max_steps", 8)
 
-            messages.append({"role": "user", "content":
-                f"**New Episode** ({difficulty})\n\n"
-                f"**Family**: `{family}`\n**Request**: \"{request}\"\n**Budget**: {max_steps} steps"})
+            pairs.append([
+                f"**New Episode** ({difficulty})",
+                f"**Family**: `{family}`\n**Request**: \"{request}\"\n**Budget**: {max_steps} steps",
+            ])
 
             for step in range(1, max_steps + 1):
                 action = {"type": "step", "data": {
@@ -175,14 +180,16 @@ async def _run_live_episode(difficulty: str) -> list[dict]:
                 done = step_data.get("done", False)
                 result_str = step_obs.get("result", "")
 
-                messages.append({"role": "assistant", "content":
-                    f"**Step {step}** | Tool: `get_task_info` | Reward: `{reward}` | Done: `{done}`\n\n```\n{str(result_str)[:300]}\n```"})
+                pairs.append([
+                    f"Step {step}: `get_task_info`",
+                    f"Reward: `{reward}` | Done: `{done}`\n```\n{str(result_str)[:300]}\n```",
+                ])
 
                 if done:
                     break
     except Exception as exc:
-        messages.append({"role": "assistant", "content": f"Connection error: {exc}"})
-    return messages
+        pairs.append([None, f"Connection error: {exc}"])
+    return pairs
 
 
 # ── Tab 3: API & Docker ──────────────────────────────────────────────────
@@ -336,11 +343,10 @@ Positive = training helped. Negative = training hurt.
 def build_gradio_ui() -> gr.Blocks:
     """Construct the 4-tab Gradio Blocks dashboard."""
 
-    theme = gr.themes.Soft(
-        primary_hue="blue",
-        secondary_hue="purple",
-        font=gr.themes.GoogleFont("Inter"),
-    )
+    try:
+        theme = gr.themes.Soft(primary_hue="blue", secondary_hue="purple")
+    except Exception:
+        theme = None
 
     with gr.Blocks(
         theme=theme,
@@ -369,7 +375,7 @@ def build_gradio_ui() -> gr.Blocks:
                 hero = _plot_path("08_training_progression.png")
                 if hero:
                     gr.Image(hero, label="Training Progression & Eval Results",
-                             show_download_button=False, elem_classes=["hero-img"])
+                             elem_classes=["hero-img"])
 
                 gr.Markdown("### Score Table (all runs, n=50 held-out)")
                 gr.Markdown(_load_summary_table())
@@ -377,7 +383,7 @@ def build_gradio_ui() -> gr.Blocks:
                 summary_img = _plot_path("07_runs_summary_table.png")
                 if summary_img:
                     gr.Image(summary_img, label="Runs Summary Table",
-                             show_download_button=False, elem_classes=["plot-img"])
+                             elem_classes=["plot-img"])
 
             # ── TAB 2: Live Demo ─────────────────────────────────────
             with gr.TabItem("Live Demo", id="demo"):
@@ -402,14 +408,13 @@ def build_gradio_ui() -> gr.Blocks:
                 chatbot = gr.Chatbot(
                     label="Episode Trace",
                     height=450,
-                    type="messages",
                 )
 
                 def run_episode(diff: str):
                     try:
                         return asyncio.run(_run_live_episode(diff))
                     except Exception as exc:
-                        return [{"role": "assistant", "content": f"Error: {exc}"}]
+                        return [[None, f"Error: {exc}"]]
 
                 run_btn.click(fn=run_episode, inputs=[difficulty], outputs=[chatbot])
 
@@ -422,7 +427,6 @@ def build_gradio_ui() -> gr.Blocks:
                 trace_chat = gr.Chatbot(
                     label="Eval Trace Replay",
                     height=400,
-                    type="messages",
                 )
 
                 _traces = _load_sample_traces()
@@ -470,6 +474,6 @@ def build_gradio_ui() -> gr.Blocks:
                     if p:
                         gr.Markdown(f"### {title}")
                         gr.Image(p, show_label=False,
-                                 show_download_button=False, elem_classes=["plot-img"])
+                                 elem_classes=["plot-img"])
 
     return demo
