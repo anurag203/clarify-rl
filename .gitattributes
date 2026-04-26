@@ -1,0 +1,14 @@
+plots/01_reward_loss_curves.png filter=lfs diff=lfs merge=lfs -text
+plots/06_same_base_delta.png filter=lfs diff=lfs merge=lfs -text
+assets/demo_replay_screenshot.png filter=lfs diff=lfs merge=lfs -text
+hackathon_data/OpenEnv[[:space:]]Hackathon[[:space:]]Opening[[:space:]]Ceremony[[:space:]]_[[:space:]]25th[[:space:]]Apr.pdf filter=lfs diff=lfs merge=lfs -text
+plots/08_training_progression.png filter=lfs diff=lfs merge=lfs -text
+plots/09_training_diagnostics.png filter=lfs diff=lfs merge=lfs -text
+wandb/run-20260426_033334-run1-0p6b-no-kl/run-run1-0p6b-no-kl.wandb filter=lfs diff=lfs merge=lfs -text
+wandb/run-20260426_033343-run2-1p7b-no-kl/run-run2-1p7b-no-kl.wandb filter=lfs diff=lfs merge=lfs -text
+wandb/run-20260426_033349-run4-1p7b-kl-anchor/run-run4-1p7b-kl-anchor.wandb filter=lfs diff=lfs merge=lfs -text
+plots/02_per_family_bars.png filter=lfs diff=lfs merge=lfs -text
+plots/03_component_breakdown.png filter=lfs diff=lfs merge=lfs -text
+plots/04_before_after.png filter=lfs diff=lfs merge=lfs -text
+plots/05_question_efficiency.png filter=lfs diff=lfs merge=lfs -text
+plots/07_runs_summary_table.png filter=lfs diff=lfs merge=lfs -text
