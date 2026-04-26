@@ -2,7 +2,7 @@
 
 > **Update this file at the END of every session.** Keep it short (≤ 100 lines). For history, see `SESSION_LOG.md`.
 
-**Last updated**: 2026-04-26 11:15 IST — **Phase 15: Training fundamentals fixed + Run 6 completed.** Diagnosed 4 root causes of eval regression across Runs 1-5 (example contamination in prompt, sparse reward signal, missing required-keys hint, train/eval role mismatch). Fixed all 4 in `train_grpo.py` and `inference.py`. Launched Run 6 (1.7B, β=1.0, A100-large, Kanan account) — training rewards were non-zero from step 1 (0.12 first step) and peaked at 0.27, dramatically better than any previous run. Run 6 eval: avg_score=0.0607, completion_rate=16% — nearly matches 1.7B base (0.063 on same v5 prompts). All plots regenerated with Run 6 included. ~5.5 h to the 5 PM IST deadline.
+**Last updated**: 2026-04-26 16:02 IST — **Phase 16: Big-card tab navigation shipped.** Replaced Gradio's hard-to-see horizontal tab pills on the env Space with a 4-column grid of large clickable cards (icon + title + subtitle, ~132 px tall). Active card gets a cyan-magenta gradient border + scale 1.02 + cyan glowing title; inactive cards lift on hover. Default tab strip + overflow chevron hidden via scoped `.clarify-tabs` CSS so the cards are the sole nav chrome. Verified end-to-end via Playwright on local + live Space (cards: 4, active_card: tab-card-results, wrapper_h: 0). Pushed to GitHub `origin/main` (54764ba) and HF Space `hf/main` (3782303). ~1 h to the 5 PM IST deadline.
 
 ## Current phase
 

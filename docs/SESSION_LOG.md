@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-04-26 16:02 IST — Cascade (Windsurf) — Phase 16: big-card tab navigation
+
+- Replaced Gradio's barely-visible horizontal tab pills (`Results / Watch Agent Play / Use the Env / Plot Deck`) with a 4-column grid of large clickable cards (~132 px tall) placed above the tab content. Each card has a 2.4em emoji icon (📊 🎬 ⚡ 🖼), an Orbitron uppercase title, and a 1-line subtitle.
+- Wired card clicks to `gr.Tabs(selected=<id>)` plus 4 `gr.update(elem_classes=...)` returns so the active card flips its `.active` class (cyan-magenta gradient border + scale 1.02 + cyan glowing title) in lock-step with the underlying tab. Hover lifts inactive cards by 3px with a cyan glow.
+- Hid Gradio's default tab strip + overflow chevron via scoped `.clarify-tabs .tab-wrapper { display:none }` so the cards are the sole nav chrome. Verified `wrapper_h: 0` on both local + live Space.
+- End-to-end Playwright verification: 4 cards render, clicking WATCH AGENT PLAY moved `.active` to `tab-card-watch` AND switched the visible tabpanel content to "Scored Episode Replays". Grid collapses to 2x2 below 900px width.
+- Pushed to GitHub `origin/main` (54764ba) directly, then synced to HF Space `hf/main` (3782303) via the `/tmp/clarify-rl-hf-sync-v2` workaround dir (direct `git push hf main` failed on LFS auth — same as last session). HF Space rebuilt clean and serving the new UI.
+- Files touched: `server/gradio_ui.py` (+151/-5 lines, single-file change). Memory + plan saved at `~/.windsurf/plans/clarify-rl-tab-cards-ef3b7f.md`.
+
+---
+
 ## 2026-04-26 07:25 IST — Claude (Cursor) — Phase 11: submission lap CLOSED + final polish
 
 - **Run 4 weights mirror to `anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2` is LIVE** (started 04:17, completed 06:33, 2h16min total for `snapshot_download` + `upload_folder` of the 6.88 GB model). `model.safetensors` resolves to a 6,882,335,328-byte presigned `cas-bridge.xethub.hf.co` URL with `X-Xet-Cas-Uid=public` — judges can download without auth. All 3 mirrors (Run 1, Run 2, Run 4) confirmed `private=False` via HF API.
