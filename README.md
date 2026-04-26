@@ -19,7 +19,6 @@ Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026, Bangalore
 [![Open notebook in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb)
 [![HF Space](https://img.shields.io/badge/HF%20Space-clarify--rl-blue)](https://huggingface.co/spaces/agarwalanu3103/clarify-rl)
 [![Demo](https://img.shields.io/badge/HF%20Space-Interactive%20Demo-success)](https://huggingface.co/spaces/anurag203/clarify-rl-demo)
-[![W&B dashboard](https://img.shields.io/badge/W%26B-3%20runs%20live-yellow)](https://wandb.ai/anuragagarwal203-cisco/clarify-rl)
 [![Run 4 model](https://img.shields.io/badge/HF%20Model-Run%204%20%CE%B2%3D0.2-ff6f00)](https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2)
 [![Blog post](https://img.shields.io/badge/Writeup-blog.md-orange)](docs/blog.md)
 
@@ -33,15 +32,22 @@ If you have one minute, do these five things in order:
 2. **Click the live env Space**: <https://huggingface.co/spaces/agarwalanu3103/clarify-rl> — confirm it loads logged-out, then `curl -X POST https://agarwalanu3103-clarify-rl.hf.space/reset -H 'Content-Type: application/json' -d '{}'` to see a real `CallToolObservation`.
 3. **Open the interactive demo**: <https://huggingface.co/spaces/anurag203/clarify-rl-demo> — three tabs: replay, KL-anchor ablation viewer, live chat against Run 4.
 4. **Open the Colab badge** at the top — `training/train_grpo.ipynb` is the runnable training script.
-5. **Skim the plots in the Results section below** — every plot has a one-line caption. The hero plot is `plots/06_same_base_delta.png` (Run 4 vs Run 2 vs base on the same family the no-KL run destroyed).
+5. **Look at the Training Progression plot right below** — reward climbs over 300 steps for all 3 runs, and the before/after eval bars show the delta per model.
 
-Everything else (W&B dashboard, model cards, slide deck, full blog) is in the **Submission asset table** further down.
+Everything else (model cards, slide deck, full blog) is in the **Submission asset table** further down.
 
 ### What the demo Space looks like
 
 ![ClarifyRL demo Space — Replay tab showing a Run 4 rollout with per-rubric breakdown](assets/demo_replay_screenshot.png)
 
 > *Screenshot of the [interactive demo Space](https://huggingface.co/spaces/anurag203/clarify-rl-demo) — Replay viewer tab.* This is the actual rollout from one of the 50 held-out eval scenarios: Run 4 (β=0.2 KL anchor) on a `event_planning` scenario, with the per-component rubric breakdown on the right (FormatCheck / FieldMatch / InfoGain / QuestionEfficiency / HallucinationCheck). The *Run 2 vs Run 4* tab and the *Live chat* tab are next to it — judges can pick any of 50 scenarios and 4 model checkpoints from the dropdowns and read the exact same conversations that produced the headline numbers below.
+
+### Training progression — the "improvement graph"
+
+![ClarifyRL — Training progression and evaluation improvement](plots/08_training_progression.png)
+
+> **LEFT — Reward climbs over training.** All 3 GRPO runs start near 0 reward and climb as policy gradient pushes the agent toward asking clarifying questions instead of hallucinating. Run 1 (0.6B, blue) reaches 0.046; Run 2 (1.7B, red) reaches 0.022; Run 4 (1.7B + KL anchor, green) reaches 0.007 — lower but stabler, anchored by the β=0.2 penalty. The dashed green line is the 1.7B base eval average (0.067) for reference.
+> **RIGHT — Eval score before vs after training.** Grey = base (untrained), color = after GRPO. Run 1 strictly improves (+0.008 on 0.6B). Run 2 regresses (-0.038 on 1.7B, no KL anchor). Run 4 recovers most of the gap (-0.011) and crucially beats base on `event_planning` (0.175 vs 0.138). All training metrics are self-hosted in this repo — no external dashboard needed.
 
 ---
 
@@ -169,16 +175,15 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 | Slide deck (5-min judge read) | [`docs/slides.md`](docs/slides.md) |
 | Submission auto-validator gates | [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md) |
 | GitHub repo | https://github.com/anurag203/clarify-rl |
-| W&B dashboard (3 runs live) | https://wandb.ai/anuragagarwal203-cisco/clarify-rl |
 | **Interactive demo (replay + live chat)** | **https://huggingface.co/spaces/anurag203/clarify-rl-demo** |
 
 ## Results — plot deck (every plot has a 1-line caption)
 
-### Reward + loss curves (training is real, not noise)
+### KL divergence + reward curves (the KL anchor in action)
 
-![Reward and loss curves](plots/01_reward_loss_curves.png)
+![KL divergence and reward curves](plots/01_reward_loss_curves.png)
 
-> *Reward + loss vs training step, all 3 GRPO runs overlaid on same axes.* Loss is bounded and reward climbs and stabilises in every run — proof that training is connecting to the env, not collapsing to a single mode. Run 4 (β=0.2 KL anchor) holds reward steady where Run 2 (β=0) drifts.
+> **LEFT — KL divergence from reference policy (Run 4 only — the only run with β>0).** KL stays bounded between 0.005–0.015 throughout 300 steps, confirming the anchor is active and preventing the catastrophic drift Run 2 suffered. **RIGHT — Reward per training step (rolling-30), all 3 runs.** Run 1 (blue, 0.6B) climbs to 0.046; Run 2 (orange, 1.7B) climbs to 0.022; Run 4 (green, 1.7B+KL) stays lower but stable at 0.007. End-values annotated at the right edge of each curve.
 
 ### Per-family scores: random vs base vs trained, on same axes
 
@@ -204,9 +209,15 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 
 > *Histogram of questions asked per scenario, with mean labelled per series.* The base **0.6B base** (mean 2.84, orange) gives up early — 10 of 50 scenarios finish at 0 questions because the small base can't generate valid plans at all. The **0.6B GRPO Run 1** (mean 4.20, blue) shifts mass into the productive 4-question region — that's the "ask before guessing" behaviour we wanted. **Run 2 (1.7B no-KL, 5.70)** and **Run 4 (1.7B +KL, 5.26)** sit near the 6-question ceiling because the larger base can already produce passable JSON; they spend the budget gathering more info before committing.
 
-### W&B + raw plots
+### Training diagnostics — convergence and behaviour shift
 
-Live curves: [W&B project (3 runs side-by-side)](https://wandb.ai/anuragagarwal203-cisco/clarify-rl). Every PNG above is committed to [`plots/`](plots/) (and rendered live on the [HF Space](https://huggingface.co/spaces/agarwalanu3103/clarify-rl/tree/main/plots)) — judges who run the auto-validator will find them right where the rubric says they should be.
+![Training diagnostics](plots/09_training_diagnostics.png)
+
+> **LEFT — Reward variance (std) over training.** Shrinking variance = policy converging on a consistent strategy. Run 2 (red) and Run 4 (green) show the 1.7B model's reward std stabilizing around step 150–200. **RIGHT — Mean completion length over training.** Tracks how verbose the agent's outputs become. The 1.7B runs (red, green) generate 300–500 token completions; the 0.6B (blue) stays compact at ~120 tokens.
+
+### All training metrics — self-hosted
+
+Every PNG above is committed to [`plots/`](plots/) and rendered live on the [HF Space](https://huggingface.co/spaces/agarwalanu3103/clarify-rl/tree/main/plots). All training metrics (reward curves, KL, completion length, reward std) are self-hosted from `log_history.json` files in `outputs/` — no external dashboard needed.
 
 See [`docs/blog.md`](docs/blog.md) for the full analysis: numbers, ablations, eval-pipeline bug saga, and lessons learned.
 

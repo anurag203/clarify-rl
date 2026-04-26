@@ -167,7 +167,12 @@ def plot_reward_loss_curves(log_history: list[dict], out_path: Path) -> None:
 
 
 def plot_reward_loss_curves_multi(runs: dict[str, list[dict]], out_path: Path) -> None:
-    """Overlay multiple training runs on the same reward/loss axes."""
+    """Overlay multiple training runs: LEFT = KL divergence, RIGHT = reward.
+
+    The loss panel is replaced by KL divergence because GRPO loss is
+    intrinsically noisy and un-interpretable, while KL directly shows
+    the anchor working (Run 4 stays ~0.005-0.010 throughout).
+    """
     runs = {label: hist for label, hist in runs.items() if hist}
     if not runs:
         print("[skip] reward/loss curves \u2014 no runs")
@@ -176,20 +181,23 @@ def plot_reward_loss_curves_multi(runs: dict[str, list[dict]], out_path: Path) -
     import matplotlib.pyplot as plt
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    palette = ["tab:red", "tab:blue", "tab:green", "tab:orange", "tab:purple"]
+
+    has_kl = False
+    window = 30
 
     for i, (label, hist) in enumerate(runs.items()):
-        steps_loss: list[int] = []
-        losses: list[float] = []
+        steps_kl: list[int] = []
+        kls: list[float] = []
         steps_rew: list[int] = []
         rewards: list[float] = []
         for row in hist:
             step = row.get("step")
             if step is None:
                 continue
-            if "loss" in row and isinstance(row["loss"], (int, float)):
-                steps_loss.append(step)
-                losses.append(float(row["loss"]))
+            kl = row.get("kl")
+            if kl is not None and isinstance(kl, (int, float)):
+                steps_kl.append(step)
+                kls.append(float(kl))
             if "reward" in row and isinstance(row["reward"], (int, float)):
                 steps_rew.append(step)
                 rewards.append(float(row["reward"]))
@@ -197,32 +205,46 @@ def plot_reward_loss_curves_multi(runs: dict[str, list[dict]], out_path: Path) -
                 steps_rew.append(step)
                 rewards.append(float(row["rewards/reward_func/mean"]))
 
-        color = palette[i % len(palette)]
-        if steps_loss:
-            axes[0].plot(steps_loss, losses, color=color, lw=1.5, label=label, alpha=0.8)
+        color = _color_for(label, i)
+
+        if steps_kl and any(v > 0 for v in kls):
+            has_kl = True
+            roll_kl = [_safe_mean(kls[max(0, j - window): j + 1]) for j in range(len(kls))]
+            axes[0].plot(steps_kl, kls, color=color, lw=0.8, alpha=0.25)
+            axes[0].plot(steps_kl, roll_kl, color=color, lw=2.5, label=f"{label}")
+
         if steps_rew:
-            axes[1].plot(steps_rew, rewards, color=color, lw=1.5, alpha=0.55)
-            window = max(3, len(rewards) // 20)
-            if len(rewards) >= window:
-                roll = [
-                    _safe_mean(rewards[max(0, j - window): j + 1])
-                    for j in range(len(rewards))
-                ]
-                axes[1].plot(steps_rew, roll, color=color, lw=2.5, label=f"{label} (rolling-{window})")
+            axes[1].plot(steps_rew, rewards, color=color, lw=0.8, alpha=0.2)
+            roll = [_safe_mean(rewards[max(0, j - window): j + 1]) for j in range(len(rewards))]
+            axes[1].plot(steps_rew, roll, color=color, lw=2.5,
+                         label=f"{label} (rolling-{window})")
+            if roll:
+                axes[1].annotate(f"{roll[-1]:.4f}",
+                                 xy=(steps_rew[-1], roll[-1]),
+                                 fontsize=8, fontweight="bold", color=color,
+                                 xytext=(5, 3), textcoords="offset points")
 
-    axes[0].set_title("Training loss")
-    axes[0].set_xlabel("Step")
-    axes[0].set_ylabel("Loss")
-    axes[0].legend()
-    axes[0].grid(alpha=0.3)
+    if has_kl:
+        axes[0].set_title("KL divergence from reference policy")
+        axes[0].set_xlabel("Step")
+        axes[0].set_ylabel("KL (nats)")
+        axes[0].legend(fontsize=8)
+        axes[0].grid(alpha=0.3)
+    else:
+        axes[0].set_title("KL divergence (no KL data — runs used beta=0)")
+        axes[0].text(0.5, 0.5, "No KL anchor active\n(beta=0 for all runs shown)",
+                     transform=axes[0].transAxes, ha="center", va="center",
+                     fontsize=12, color="gray")
+        axes[0].grid(alpha=0.3)
 
-    axes[1].set_title("Reward per training step")
+    axes[1].set_title("Reward per training step (rolling-30)")
     axes[1].set_xlabel("Step")
     axes[1].set_ylabel("Reward (rubric mean)")
-    axes[1].legend()
+    axes[1].legend(fontsize=8)
     axes[1].grid(alpha=0.3)
+    axes[1].set_ylim(bottom=-0.005)
 
-    fig.suptitle("ClarifyRL GRPO training curves")
+    fig.suptitle("ClarifyRL GRPO training curves", fontsize=13, fontweight="bold")
     fig.tight_layout()
     fig.savefig(out_path, dpi=160)
     plt.close(fig)
