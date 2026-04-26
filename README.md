@@ -37,6 +37,12 @@ If you have one minute, do these five things in order:
 
 Everything else (W&B dashboard, model cards, slide deck, full blog) is in the **Submission asset table** further down.
 
+### What the demo Space looks like
+
+![ClarifyRL demo Space — Replay tab showing a Run 4 rollout with per-rubric breakdown](assets/demo_replay_screenshot.png)
+
+> *Screenshot of the [interactive demo Space](https://huggingface.co/spaces/anurag203/clarify-rl-demo) — Replay viewer tab.* This is the actual rollout from one of the 50 held-out eval scenarios: Run 4 (β=0.2 KL anchor) on a `event_planning` scenario, with the per-component rubric breakdown on the right (FormatCheck / FieldMatch / InfoGain / QuestionEfficiency / HallucinationCheck). The *Run 2 vs Run 4* tab and the *Live chat* tab are next to it — judges can pick any of 50 scenarios and 4 model checkpoints from the dropdowns and read the exact same conversations that produced the headline numbers below.
+
 ---
 
 ## Problem · Environment · Results · Why it matters
