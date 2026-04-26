@@ -6,7 +6,7 @@ import time
 from urllib import error, request
 
 
-BASE = "http://127.0.0.1:8000"
+BASE = "http://127.0.0.1:7860"
 
 
 def _post(path: str, payload: dict) -> tuple[int, str]:

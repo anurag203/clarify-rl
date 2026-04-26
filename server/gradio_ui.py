@@ -484,15 +484,15 @@ asyncio.run(demo())
 git clone https://github.com/anurag203/clarify-rl.git
 cd clarify-rl
 docker build -t clarify-rl .
-docker run -p 8000:8000 clarify-rl
-# Visit http://localhost:8000
+docker run -p 7860:7860 clarify-rl
+# Visit http://localhost:7860
 ```
 
 Or with pip:
 
 ```bash
 pip install -e .
-uvicorn server.app:app --host 0.0.0.0 --port 8000
+uvicorn server.app:app --host 0.0.0.0 --port 7860
 ```
 
 ---
@@ -505,7 +505,7 @@ name: clarify_rl
 type: space
 runtime: fastapi
 app: server.app:app
-port: 8000
+port: 7860
 
 tasks:
   - id: easy
@@ -615,7 +615,7 @@ async def _run_live_episode(difficulty: str) -> list[list]:
     import websockets
     pairs: list[list] = []
     try:
-        async with websockets.connect("ws://localhost:8000/ws", open_timeout=5) as ws:
+        async with websockets.connect("ws://localhost:7860/ws", open_timeout=5) as ws:
             await ws.send(json.dumps({"type": "reset", "data": {"task_id": difficulty}}))
             resp = json.loads(await ws.recv())
             data = resp.get("data", {})

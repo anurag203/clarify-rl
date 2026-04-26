@@ -37,7 +37,7 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 API_KEY = HF_TOKEN or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
 BASELINE_MODE = os.getenv("BASELINE_MODE", "hybrid").lower()
 
-ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:8000")
+ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860")
 
 TEMPERATURE = 0.7
 # Qwen3 with enable_thinking=False usually fits in <200 tokens; we leave 800

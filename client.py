@@ -5,7 +5,7 @@ Provides the client for connecting to a ClarifyRL Environment server.
 Extends MCPToolClient for tool-calling style interactions.
 
 Example:
-    >>> with ClarifyClient(base_url="http://localhost:8000") as env:
+    >>> with ClarifyClient(base_url="http://localhost:7860") as env:
     ...     env.reset()
     ...     tools = env.list_tools()
     ...     result = env.call_tool("ask_question", question="What is your budget?")

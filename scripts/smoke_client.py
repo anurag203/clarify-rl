@@ -16,7 +16,7 @@ from client import ClarifyClient
 
 
 def main() -> int:
-    env = ClarifyClient(base_url="http://127.0.0.1:8000").sync()
+    env = ClarifyClient(base_url="http://127.0.0.1:7860").sync()
     with env:
         print("--- list tools ---")
         tools = env.list_tools()

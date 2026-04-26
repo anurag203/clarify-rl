@@ -2,7 +2,7 @@
 FastAPI entry point for the ClarifyRL OpenEnv environment.
 
 `openenv.yaml` references this module as `server.app:app`.
-Run locally with:  uvicorn server.app:app --host 0.0.0.0 --port 8000
+Run locally with:  uvicorn server.app:app --host 0.0.0.0 --port 7860
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ app = gr.mount_gradio_app(app, _gradio_demo, path="/")
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("server.app:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("server.app:app", host="0.0.0.0", port=7860, reload=False)
 
 
 if __name__ == "__main__":
