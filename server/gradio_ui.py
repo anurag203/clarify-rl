@@ -23,18 +23,14 @@ _PLOTS = _ROOT / "plots"
 _CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── Force dark background everywhere ─────────────────────── */
 html, body, main,
-.gradio-container, .gradio-container.gradio-container-6-13-0,
-div[class*="gradio"], .contain, .app,
+.gradio-container, div[class*="gradio"], .contain, .app,
 [data-testid="blocks-container"] {
     background: #0a0a1a !important;
     color: #e0e0ff !important;
 }
-
 footer, .footer { display: none !important; }
 
-/* ── Tabs ─────────────────────────────────────────────────── */
 [role="tablist"] {
     background: #111128 !important;
     border-radius: 12px 12px 0 0 !important;
@@ -54,120 +50,43 @@ footer, .footer { display: none !important; }
     padding: 10px 18px !important;
     transition: all 0.3s ease;
 }
-[role="tab"]:hover {
-    color: #00f0ff !important;
-    background: rgba(0,240,255,0.08) !important;
-}
+[role="tab"]:hover { color: #00f0ff !important; background: rgba(0,240,255,0.08) !important; }
 [role="tab"][aria-selected="true"] {
     color: #00f0ff !important;
     background: rgba(0,240,255,0.12) !important;
     border-color: #00f0ff !important;
     box-shadow: 0 0 15px rgba(0,240,255,0.2), inset 0 0 15px rgba(0,240,255,0.05);
 }
-[role="tabpanel"] {
-    background: #0a0a1a !important;
-    border: none !important;
-}
+[role="tabpanel"] { background: #0a0a1a !important; border: none !important; }
 
-/* ── Markdown text ────────────────────────────────────────── */
 .markdown-text, .prose, .md, [data-testid="markdown"],
-.markdown-text p, .prose p {
-    color: #e0e0ff !important;
-}
+.markdown-text p, .prose p { color: #e0e0ff !important; }
 .markdown-text h1, .prose h1 { font-family: 'Orbitron', monospace !important; color: #00f0ff !important; text-shadow: 0 0 10px rgba(0,240,255,0.3); font-size: 1.7em !important; border-bottom: 1px solid #1e1e4a; padding-bottom: 8px; }
-.markdown-text h2, .prose h2 { font-family: 'Orbitron', monospace !important; color: #00f0ff !important; text-shadow: 0 0 8px rgba(0,240,255,0.25); font-size: 1.3em !important; }
-.markdown-text h3, .prose h3 { font-family: 'Orbitron', monospace !important; color: #39ff14 !important; text-shadow: 0 0 8px rgba(57,255,20,0.2); font-size: 1.1em !important; }
+.markdown-text h2, .prose h2 { font-family: 'Orbitron', monospace !important; color: #00f0ff !important; font-size: 1.3em !important; }
+.markdown-text h3, .prose h3 { font-family: 'Orbitron', monospace !important; color: #39ff14 !important; font-size: 1.1em !important; }
 .markdown-text strong, .prose strong { color: #fffc00 !important; }
-.markdown-text a, .prose a { color: #00f0ff !important; text-decoration: none; border-bottom: 1px solid rgba(0,240,255,0.3); transition: all 0.2s; }
-.markdown-text a:hover, .prose a:hover { color: #ff00e5 !important; border-color: #ff00e5; text-shadow: 0 0 8px rgba(255,0,229,0.4); }
-.markdown-text code, .prose code {
-    background: rgba(0,240,255,0.1) !important;
-    color: #00f0ff !important;
-    border: 1px solid rgba(0,240,255,0.2) !important;
-    border-radius: 4px; padding: 1px 6px;
-    font-family: 'JetBrains Mono', monospace !important; font-size: 0.88em;
-}
-.markdown-text pre, .prose pre {
-    background: #0d0d2b !important;
-    border: 1px solid #1e1e4a !important;
-    border-radius: 8px !important;
-}
-.markdown-text pre code, .prose pre code {
-    background: transparent !important; border: none !important;
-    color: #39ff14 !important;
-}
-.markdown-text blockquote, .prose blockquote {
-    border-left: 3px solid #ff00e5 !important;
-    background: rgba(255,0,229,0.05) !important;
-    padding: 10px 16px !important; border-radius: 0 8px 8px 0;
-    color: #8888bb !important;
-}
-.markdown-text hr, .prose hr {
-    border: none !important; height: 1px !important;
-    background: linear-gradient(90deg, transparent, #00f0ff, #ff00e5, transparent) !important;
-    margin: 24px 0 !important;
-}
-
-/* ── Tables ───────────────────────────────────────────────── */
+.markdown-text a, .prose a { color: #00f0ff !important; text-decoration: none; border-bottom: 1px solid rgba(0,240,255,0.3); }
+.markdown-text a:hover, .prose a:hover { color: #ff00e5 !important; }
+.markdown-text code, .prose code { background: rgba(0,240,255,0.1) !important; color: #00f0ff !important; border: 1px solid rgba(0,240,255,0.2) !important; border-radius: 4px; padding: 1px 6px; font-family: 'JetBrains Mono', monospace !important; font-size: 0.88em; }
+.markdown-text pre, .prose pre { background: #0d0d2b !important; border: 1px solid #1e1e4a !important; border-radius: 8px !important; }
+.markdown-text pre code, .prose pre code { background: transparent !important; border: none !important; color: #39ff14 !important; }
+.markdown-text blockquote, .prose blockquote { border-left: 3px solid #ff00e5 !important; background: rgba(255,0,229,0.05) !important; padding: 10px 16px !important; border-radius: 0 8px 8px 0; color: #8888bb !important; }
+.markdown-text hr, .prose hr { border: none !important; height: 1px !important; background: linear-gradient(90deg, transparent, #00f0ff, #ff00e5, transparent) !important; margin: 24px 0 !important; }
 .markdown-text table, .prose table { border-collapse: collapse; width: 100%; }
-.markdown-text th, .prose th {
-    background: rgba(0,240,255,0.1) !important; color: #00f0ff !important;
-    font-family: 'Orbitron', monospace !important; font-size: 0.78em;
-    text-transform: uppercase; letter-spacing: 1px;
-    padding: 10px 12px !important; border-bottom: 2px solid #00f0ff !important;
-}
-.markdown-text td, .prose td {
-    padding: 8px 12px !important; border-bottom: 1px solid #1e1e4a !important;
-    color: #e0e0ff !important;
-}
+.markdown-text th, .prose th { background: rgba(0,240,255,0.1) !important; color: #00f0ff !important; font-family: 'Orbitron', monospace !important; font-size: 0.78em; text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px !important; border-bottom: 2px solid #00f0ff !important; }
+.markdown-text td, .prose td { padding: 8px 12px !important; border-bottom: 1px solid #1e1e4a !important; color: #e0e0ff !important; }
 .markdown-text tr:hover td, .prose tr:hover td { background: rgba(0,240,255,0.04) !important; }
 
-/* ── Images ───────────────────────────────────────────────── */
-.image-container, [data-testid="image"] {
-    border: 1px solid #1e1e4a !important; border-radius: 12px !important;
-    overflow: hidden; background: #0a0a1a !important;
-    box-shadow: 0 0 20px rgba(0,240,255,0.08);
-    transition: box-shadow 0.3s ease;
-}
-.image-container:hover, [data-testid="image"]:hover {
-    box-shadow: 0 0 30px rgba(0,240,255,0.18), 0 0 60px rgba(255,0,229,0.08);
-}
-.image-container img, [data-testid="image"] img {
-    border-radius: 12px;
-}
+.image-container, [data-testid="image"] { border: 1px solid #1e1e4a !important; border-radius: 12px !important; overflow: hidden; background: #0a0a1a !important; box-shadow: 0 0 20px rgba(0,240,255,0.08); transition: box-shadow 0.3s ease; }
+.image-container:hover, [data-testid="image"]:hover { box-shadow: 0 0 30px rgba(0,240,255,0.18), 0 0 60px rgba(255,0,229,0.08); }
 
-/* ── Buttons ──────────────────────────────────────────────── */
-button.primary, [data-testid="button"].primary,
-button[variant="primary"] {
-    background: linear-gradient(135deg, #00f0ff, #ff00e5) !important;
-    color: #fff !important; font-family: 'Orbitron', monospace !important;
-    font-weight: 700 !important; letter-spacing: 1px; text-transform: uppercase;
-    border: none !important; border-radius: 8px !important;
-    box-shadow: 0 0 20px rgba(0,240,255,0.3), 0 0 40px rgba(255,0,229,0.15);
-    transition: all 0.3s ease;
-}
-button.primary:hover, [data-testid="button"].primary:hover {
-    box-shadow: 0 0 30px rgba(0,240,255,0.5), 0 0 60px rgba(255,0,229,0.3);
-    transform: translateY(-1px);
-}
+button.primary, button[variant="primary"] { background: linear-gradient(135deg, #00f0ff, #ff00e5) !important; color: #fff !important; font-family: 'Orbitron', monospace !important; font-weight: 700 !important; letter-spacing: 1px; text-transform: uppercase; border: none !important; border-radius: 8px !important; box-shadow: 0 0 20px rgba(0,240,255,0.3); transition: all 0.3s ease; }
+button.primary:hover { box-shadow: 0 0 30px rgba(0,240,255,0.5), 0 0 60px rgba(255,0,229,0.3); transform: translateY(-1px); }
 
-/* ── Inputs / dropdowns ───────────────────────────────────── */
-input, select, textarea, [data-testid="textbox"],
-.border-none, .dropdown-arrow, .wrap {
-    background: #111128 !important; color: #e0e0ff !important;
-    border-color: #1e1e4a !important; border-radius: 8px !important;
-}
-label, .label-text, [data-testid="label-text"] {
-    color: #8888bb !important;
-}
+input, select, textarea, [data-testid="textbox"], .wrap { background: #111128 !important; color: #e0e0ff !important; border-color: #1e1e4a !important; border-radius: 8px !important; }
+label, .label-text { color: #8888bb !important; }
+[data-testid="chatbot"], .chatbot { background: #111128 !important; border: 1px solid #1e1e4a !important; border-radius: 12px !important; }
 
-/* ── Chatbot ──────────────────────────────────────────────── */
-[data-testid="chatbot"], .chatbot {
-    background: #111128 !important;
-    border: 1px solid #1e1e4a !important; border-radius: 12px !important;
-}
-
-/* ── Neon pulse animation for live dot ────────────────────── */
 @keyframes neonPulse {
     0%, 100% { box-shadow: 0 0 4px #39ff14; }
     50% { box-shadow: 0 0 16px #39ff14, 0 0 30px rgba(57,255,20,0.3); }
@@ -180,7 +99,7 @@ label, .label-text, [data-testid="label-text"] {
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# HTML components
 # ---------------------------------------------------------------------------
 
 def _plot_path(name: str) -> str | None:
@@ -191,7 +110,7 @@ def _plot_path(name: str) -> str | None:
 def _load_summary_table() -> str:
     p = _PLOTS / "runs_summary.json"
     if not p.exists():
-        return "*runs_summary.json not found*"
+        return ""
     data = json.loads(p.read_text())
     rows = data.get("rows", [])
     lines = [
@@ -205,40 +124,19 @@ def _load_summary_table() -> str:
 
 def _header_html() -> str:
     return """
-    <div style="
-        text-align:center; padding:32px 20px 24px;
-        background: linear-gradient(135deg, #0a0a2e 0%, #1a0a3e 50%, #0a0a2e 100%);
-        border-bottom: 2px solid #00f0ff;
-        box-shadow: 0 4px 30px rgba(0,240,255,0.15);
-        border-radius: 12px; margin-bottom: 12px;
-    ">
-        <h1 style="
-            font-family: 'Orbitron', monospace; font-size: 2.6em; font-weight: 900;
-            background: linear-gradient(90deg, #00f0ff, #ff00e5, #00f0ff);
-            background-size: 200% auto;
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            animation: gradientShift 4s ease infinite;
-            margin: 0 0 10px 0; letter-spacing: 3px;
-        ">CLARIFY RL</h1>
+    <div style="text-align:center; padding:32px 20px 24px; background:linear-gradient(135deg,#0a0a2e 0%,#1a0a3e 50%,#0a0a2e 100%); border-bottom:2px solid #00f0ff; box-shadow:0 4px 30px rgba(0,240,255,0.15); border-radius:12px; margin-bottom:12px;">
+        <h1 style="font-family:'Orbitron',monospace; font-size:2.6em; font-weight:900; background:linear-gradient(90deg,#00f0ff,#ff00e5,#00f0ff); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:gradientShift 4s ease infinite; margin:0 0 10px 0; letter-spacing:3px;">CLARIFY RL</h1>
         <p style="color:#c0c0ff; font-size:1.05em; margin:4px 0; font-family:'Inter',sans-serif;">
-            <span style="
-                display:inline-block; width:9px; height:9px; background:#39ff14;
-                border-radius:50%; margin-right:8px; vertical-align:middle;
-                animation: neonPulse 2s ease infinite;
-            "></span>
+            <span style="display:inline-block; width:9px; height:9px; background:#39ff14; border-radius:50%; margin-right:8px; vertical-align:middle; animation:neonPulse 2s ease infinite;"></span>
             Train LLMs to <strong style="color:#fff;">ask clarifying questions</strong> instead of hallucinating
         </p>
         <p style="color:#8888bb; font-size:0.85em; margin-top:10px; font-family:'Inter',sans-serif;">
-            <a href="https://github.com/anurag203/clarify-rl" style="color:#00f0ff; text-decoration:none; font-weight:600;">GitHub</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md" style="color:#00f0ff; text-decoration:none; font-weight:600;">Blog</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb" style="color:#00f0ff; text-decoration:none; font-weight:600;">Colab</a>
-            &nbsp;&bull;&nbsp;
+            <a href="https://github.com/anurag203/clarify-rl" style="color:#00f0ff; text-decoration:none; font-weight:600;">GitHub</a> &bull;
+            <a href="https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md" style="color:#00f0ff; text-decoration:none; font-weight:600;">Blog</a> &bull;
+            <a href="https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb" style="color:#00f0ff; text-decoration:none; font-weight:600;">Colab</a> &bull;
             <a href="https://huggingface.co/spaces/anurag203/clarify-rl-demo" style="color:#00f0ff; text-decoration:none; font-weight:600;">Demo</a>
         </p>
-    </div>
-    """
+    </div>"""
 
 
 def _stat_cards_html() -> str:
@@ -253,19 +151,7 @@ def _stat_cards_html() -> str:
     n_runs = sum(1 for r in rows if "GRPO" in r.get("label", ""))
 
     def card(value, label, color, glow):
-        return f"""
-        <div style="
-            flex:1; min-width:140px; background:#111128;
-            border:1px solid #1e1e4a; border-radius:12px;
-            padding:18px 14px; text-align:center;
-            transition: all 0.3s ease; cursor:default;
-        " onmouseover="this.style.borderColor='{color}'; this.style.boxShadow='0 0 20px {glow}';"
-           onmouseout="this.style.borderColor='#1e1e4a'; this.style.boxShadow='none';">
-            <div style="font-family:'Orbitron',monospace; font-size:1.9em; font-weight:900;
-                color:{color}; text-shadow: 0 0 10px {glow};">{value}</div>
-            <div style="font-size:0.72em; color:#8888bb; text-transform:uppercase;
-                letter-spacing:1.5px; margin-top:5px; font-family:'Inter',sans-serif;">{label}</div>
-        </div>"""
+        return f'<div style="flex:1; min-width:130px; background:#111128; border:1px solid #1e1e4a; border-radius:12px; padding:16px 12px; text-align:center; transition:all 0.3s;" onmouseover="this.style.borderColor=\'{color}\'; this.style.boxShadow=\'0 0 20px {glow}\';" onmouseout="this.style.borderColor=\'#1e1e4a\'; this.style.boxShadow=\'none\';"><div style="font-family:\'Orbitron\',monospace; font-size:1.8em; font-weight:900; color:{color}; text-shadow:0 0 10px {glow};">{value}</div><div style="font-size:0.7em; color:#8888bb; text-transform:uppercase; letter-spacing:1.5px; margin-top:4px; font-family:\'Inter\',sans-serif;">{label}</div></div>'
 
     cards = []
     if best:
@@ -276,180 +162,86 @@ def _stat_cards_html() -> str:
         cards.append(card(f"{ceiling['avg_score']:.3f}", "4B Ceiling", "#39ff14", "rgba(57,255,20,0.4)"))
     cards.append(card(str(n_runs), "GRPO Runs", "#fffc00", "rgba(255,252,0,0.4)"))
     cards.append(card("5", "Task Families", "#ff6b00", "rgba(255,107,0,0.4)"))
+    return f'<div style="display:flex; gap:12px; margin:12px 0; flex-wrap:wrap;">{"".join(cards)}</div>'
 
-    return f'<div style="display:flex; gap:14px; margin:14px 0; flex-wrap:wrap;">{"".join(cards)}</div>'
+
+def _how_it_works_html() -> str:
+    box = "background:#111128; border:1px solid #1e1e4a; border-radius:12px; padding:20px; text-align:center;"
+    arrow = '<div style="font-size:2em; color:#00f0ff; align-self:center;">&#10142;</div>'
+    return f"""
+    <div style="margin:16px 0;">
+        <h2 style="font-family:'Orbitron',monospace; color:#00f0ff; font-size:1.2em; text-align:center; margin-bottom:12px; letter-spacing:2px;">HOW IT WORKS</h2>
+        <div style="display:flex; gap:12px; align-items:stretch; flex-wrap:wrap;">
+            <div style="flex:1; min-width:180px; {box}">
+                <div style="font-size:0.7em; color:#8888bb; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Step 1: Vague Request</div>
+                <div style="font-size:1.1em; color:#ff00e5; font-style:italic;">"Plan a birthday party"</div>
+                <div style="font-size:0.75em; color:#666; margin-top:6px;">Hidden profile: venue=home, guests=20, theme=surprise...</div>
+            </div>
+            {arrow}
+            <div style="flex:1.3; min-width:200px; {box}">
+                <div style="font-size:0.7em; color:#8888bb; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Step 2: Agent Asks Questions</div>
+                <div style="font-size:0.85em; color:#39ff14; font-family:'JetBrains Mono',monospace; text-align:left; line-height:1.7;">
+                    ask_question("How many guests?")<br>
+                    ask_question("Indoor or outdoor?")<br>
+                    ask_question("What's the budget?")<br>
+                    propose_plan('{{"venue":"home",...}}')
+                </div>
+            </div>
+            {arrow}
+            <div style="flex:1; min-width:180px; {box}">
+                <div style="font-size:0.7em; color:#8888bb; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Step 3: Rubric Scores Plan</div>
+                <div style="font-size:0.82em; color:#e0e0ff; font-family:'JetBrains Mono',monospace; text-align:left; line-height:1.7;">
+                    <span style="color:#00f0ff;">FieldMatch</span>&nbsp;&nbsp;&nbsp;&nbsp;0.50<br>
+                    <span style="color:#00f0ff;">InfoGain</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.20<br>
+                    <span style="color:#00f0ff;">Efficiency</span>&nbsp;&nbsp;&nbsp;0.15<br>
+                    <span style="color:#00f0ff;">Hallucination</span>&nbsp;0.15
+                </div>
+            </div>
+        </div>
+    </div>"""
 
 
-# ---------------------------------------------------------------------------
-# Tab content
-# ---------------------------------------------------------------------------
-
-_OVERVIEW_MD = """
-# ClarifyRL
-
-> Train LLMs to **ask clarifying questions** instead of hallucinating.
->
-> **Theme #5 Wild Card** &middot; Teaching *epistemic humility* as an AI-safety primitive.
-
-**Team Bhole Chature** (Anurag Agarwal + Kanan Agarwal) &middot; Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026
-
----
-
-## The Problem
-
-Today's LLMs default to **hallucinating answers to ambiguous requests** instead of asking
-what they don't know. We built an RL environment that **rewards the opposite reflex**:
-admit uncertainty, ask the *right* question, then act on grounded information.
-
-## The Environment
-
-Each episode: a deliberately vague request (e.g. *"Plan a birthday party"*) with a **hidden
-user profile**. The agent has 3 MCP tools: `ask_question`, `propose_plan`, `get_task_info`.
-A **5-component composable rubric** scores the final plan.
-
-**5 task families**: coding requirements, medical intake, support triage, meeting scheduling, event planning.
-
----
-
-## Key Links
-
-| Resource | Link |
-|----------|------|
-| GitHub | [github.com/anurag203/clarify-rl](https://github.com/anurag203/clarify-rl) |
-| Blog / Writeup | [Blog.md](https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md) |
-| Colab Notebook | [Open in Colab](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb) |
-| Trained Model (Run 6) | [clarify-rl-grpo-qwen3-1-7b-run6](https://huggingface.co/Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6) |
-| Trained Model (Run 4) | [clarify-rl-run4-qwen3-1.7b-beta0.2](https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2) |
-| Interactive Demo | [clarify-rl-demo](https://huggingface.co/spaces/anurag203/clarify-rl-demo) |
-
----
-
-## Headline Results (n=50 held-out scenarios)
-"""
-
-_API_MD = """
-## Environment API
-
-This Space exposes a **live** OpenEnv-compatible environment. All endpoints are active right now.
-
----
-
-### Health Check
-```bash
-curl https://agarwalanu3103-clarify-rl.hf.space/health
-```
-
-### Reset (start a new episode)
-```bash
-curl -X POST https://agarwalanu3103-clarify-rl.hf.space/reset \\
-  -H 'Content-Type: application/json' \\
-  -d '{"task_id": "medium"}'
-```
-
-### Step (take an action)
-```bash
-curl -X POST https://agarwalanu3103-clarify-rl.hf.space/step \\
-  -H 'Content-Type: application/json' \\
-  -d '{"type":"call_tool","tool_name":"ask_question","arguments":{"question":"What is the budget?"}}'
-```
-
-### WebSocket
-```python
-import websockets, json, asyncio
-
-async def demo():
-    async with websockets.connect("wss://agarwalanu3103-clarify-rl.hf.space/ws") as ws:
-        await ws.send(json.dumps({"type": "reset", "data": {"task_id": "easy"}}))
-        print(json.loads(await ws.recv()))
-
-asyncio.run(demo())
-```
-
----
-
-### Available Tools
-
-| Tool | Arguments | Description |
-|------|-----------|-------------|
-| `ask_question` | `{"question": "..."}` | Ask one clarifying question (max 6/episode) |
-| `propose_plan` | `{"plan": '{"key":"val"}'}` | Submit final plan as JSON string. **Ends episode.** |
-| `get_task_info` | `{}` | Re-read the original user request |
-
----
-
-## Run Locally with Docker
-```bash
-git clone https://github.com/anurag203/clarify-rl.git
-cd clarify-rl
-docker build -t clarify-rl .
-docker run -p 7860:7860 clarify-rl
-```
-
-## openenv.yaml
-```yaml
-spec_version: 1
-name: clarify_rl
-type: space
-runtime: fastapi
-app: server.app:app
-port: 7860
-tasks:
-  - id: easy
-    title: "Mild Ambiguity (2-3 fields)"
-    max_steps: 8
-  - id: medium
-    title: "Moderate Ambiguity (4-5 fields)"
-    max_steps: 10
-  - id: hard
-    title: "High Ambiguity (6-7 fields)"
-    max_steps: 12
-```
-
-## Composable Rubric
-```
-Sequential(
-  Gate(FormatCheck, threshold=0.5),
-  WeightedSum([
-    FieldMatch         0.50
-    InfoGain           0.20
-    QuestionEfficiency 0.15
-    HallucinationCheck 0.15
-  ])
-)
-```
-"""
-
-_RESULTS_MD = """
-## Training Progression
-
-Run 6 (dark blue) has the healthiest reward curve: **non-zero from step 1**, peaking at **0.27**.
-Run 7 (beta=0.3, lr=1e-6) is training with rewards reaching **0.73** at step 115.
-
-### Root causes fixed in Run 6
-
-1. **Example contamination** &mdash; removed misleading field-name example
-2. **Sparse reward** &mdash; added plan-submission bonus and no-plan penalty
-3. **Missing required keys** &mdash; surfaced required field names in the observation
-4. **Role mismatch** &mdash; aligned training and eval prompt formats
-
----
-
-## KL-Anchor Ablation (5-point beta sweep)
-
-| Beta | Run | Avg Score | Key finding |
-|------|-----|-----------|-------------|
-| 0.0 | Run 2 | 0.029 | Catastrophic collapse on event_planning |
-| 0.2 | Run 4 | 0.056 | Recovered event_planning, beats base (0.175 vs 0.138) |
-| 0.3 | Run 7 | *training* | Training reward 0.48-0.73 (highest ever) |
-| 0.5 | Run 5 | *canceled* | Reward stuck at 0 (pre-fix pipeline) |
-| 1.0 | Run 6 | 0.061 | Nearly matches base. Strongest training signal pre-Run 7. |
-
----
-"""
+def _before_after_html() -> str:
+    left_box = "flex:1; min-width:250px; background:#1a0a0a; border:2px solid #ff4444; border-radius:12px; padding:18px;"
+    right_box = "flex:1; min-width:250px; background:#0a1a0a; border:2px solid #39ff14; border-radius:12px; padding:18px;"
+    step_s = "font-size:0.82em; color:#e0e0ff; font-family:'JetBrains Mono',monospace; margin:3px 0;"
+    return f"""
+    <div style="margin:16px 0;">
+        <h2 style="font-family:'Orbitron',monospace; color:#00f0ff; font-size:1.2em; text-align:center; margin-bottom:12px; letter-spacing:2px;">BEFORE vs AFTER TRAINING</h2>
+        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+            <div style="{left_box}">
+                <div style="text-align:center; margin-bottom:10px;">
+                    <span style="font-family:'Orbitron',monospace; color:#ff4444; font-size:1em; font-weight:700;">UNTRAINED</span>
+                    <span style="color:#888; font-size:0.8em;"> &mdash; Qwen3-0.6B base</span>
+                </div>
+                <p style="{step_s}">Step 1: get_task_info() &rarr; re-reads request</p>
+                <p style="{step_s}">Step 2: get_task_info() &rarr; re-reads again</p>
+                <p style="{step_s}">Step 3: get_task_info() &rarr; loop continues...</p>
+                <p style="{step_s}">...</p>
+                <p style="{step_s}">Step 9: get_task_info() &rarr; never asks a question</p>
+                <p style="{step_s} color:#ff4444; font-weight:700; margin-top:8px;">&#10008; No plan submitted. Score: 0.000</p>
+            </div>
+            <div style="{right_box}">
+                <div style="text-align:center; margin-bottom:10px;">
+                    <span style="font-family:'Orbitron',monospace; color:#39ff14; font-size:1em; font-weight:700;">TRAINED</span>
+                    <span style="color:#888; font-size:0.8em;"> &mdash; Qwen3-0.6B GRPO (Run 1)</span>
+                </div>
+                <p style="{step_s}">Step 1: ask_question("event details?") &rarr; "Up to you"</p>
+                <p style="{step_s}">Step 2: ask_question("time and location?") &rarr; venue=home</p>
+                <p style="{step_s}">Step 3: ask_question("how many guests?") &rarr; 100</p>
+                <p style="{step_s}">Step 4: propose_plan('{{"event_type":"birthday",...}}')</p>
+                <p style="{step_s} color:#39ff14; font-weight:700; margin-top:8px;">&#10004; 5-key plan submitted. Score: 0.382</p>
+                <p style="font-size:0.72em; color:#888; margin-top:4px;">FormatCheck 1.0 | FieldMatch 0.36 | InfoGain 0.50</p>
+            </div>
+        </div>
+        <p style="text-align:center; color:#8888bb; font-size:0.8em; margin-top:8px; font-family:'Inter',sans-serif;">
+            Same scenario (seed10004_event_planning_hard). Same model. 300 steps of GRPO turned a re-read loop into a planner.
+        </p>
+    </div>"""
 
 
 # ---------------------------------------------------------------------------
-# Live demo
+# Trace replay helpers
 # ---------------------------------------------------------------------------
 
 def _load_sample_traces() -> list[dict[str, Any]]:
@@ -458,10 +250,10 @@ def _load_sample_traces() -> list[dict[str, Any]]:
     for edir in sorted(evals_dir.glob("*/evals/eval_*.json")):
         try:
             data = json.loads(edir.read_text())
-            for r in data.get("results", [])[:3]:
+            for r in data.get("results", [])[:5]:
                 if r.get("final_score", 0) > 0:
                     traces.append(r)
-                    if len(traces) >= 8:
+                    if len(traces) >= 12:
                         return traces
         except Exception:
             continue
@@ -511,7 +303,7 @@ async def _run_live_episode(difficulty: str) -> list[list]:
             fam = info.get("family", "unknown")
             mx = info.get("max_steps", 8)
             pairs.append([f"Start ({difficulty})", f"**{fam}**: \"{req}\"\nBudget: {mx} steps"])
-            for step in range(1, mx + 1):
+            for step in range(1, min(mx + 1, 4)):
                 action = {"type": "step", "data": {"type": "call_tool", "tool_name": "get_task_info", "arguments": {}}}
                 await ws.send(json.dumps(action))
                 sr = json.loads(await ws.recv())
@@ -528,70 +320,191 @@ async def _run_live_episode(difficulty: str) -> list[list]:
 
 
 # ---------------------------------------------------------------------------
-# Build
+# Tab content markdown
+# ---------------------------------------------------------------------------
+
+_OVERVIEW_MD = """
+## The Idea
+
+LLMs **hallucinate** when given vague instructions. We built an RL environment that rewards the opposite: **ask first, then act**.
+
+5 task families (coding, medical, support, meetings, events) &times; 3 difficulty levels &times; composable 5-component rubric.
+Trained with **GRPO** (Group Relative Policy Optimization) across **7 runs** with a controlled KL-anchor ablation.
+"""
+
+_API_MD = """
+## Environment API
+
+This Space exposes a **live** OpenEnv-compatible environment. All endpoints are active right now.
+
+---
+
+### Health Check
+```bash
+curl https://agarwalanu3103-clarify-rl.hf.space/health
+```
+
+### Reset (start a new episode)
+```bash
+curl -X POST https://agarwalanu3103-clarify-rl.hf.space/reset \\
+  -H 'Content-Type: application/json' -d '{"task_id": "medium"}'
+```
+
+### Step (take an action)
+```bash
+curl -X POST https://agarwalanu3103-clarify-rl.hf.space/step \\
+  -H 'Content-Type: application/json' \\
+  -d '{"type":"call_tool","tool_name":"ask_question","arguments":{"question":"What is the budget?"}}'
+```
+
+### WebSocket (for training)
+```python
+import websockets, json, asyncio
+
+async def demo():
+    async with websockets.connect("wss://agarwalanu3103-clarify-rl.hf.space/ws") as ws:
+        await ws.send(json.dumps({"type": "reset", "data": {"task_id": "easy"}}))
+        print(json.loads(await ws.recv()))
+
+asyncio.run(demo())
+```
+
+---
+
+### Available Tools
+
+| Tool | Arguments | Description |
+|------|-----------|-------------|
+| `ask_question` | `{"question": "..."}` | Ask one clarifying question (max 6/episode) |
+| `propose_plan` | `{"plan": '{"key":"val"}'}` | Submit final plan as JSON string. **Ends episode.** |
+| `get_task_info` | `{}` | Re-read the original user request |
+
+---
+
+## Run Locally
+```bash
+git clone https://github.com/anurag203/clarify-rl.git && cd clarify-rl
+docker build -t clarify-rl . && docker run -p 7860:7860 clarify-rl
+```
+
+## Composable Rubric
+```
+Sequential(
+  Gate(FormatCheck, threshold=0.5),
+  WeightedSum([ FieldMatch 0.50, InfoGain 0.20, Efficiency 0.15, Hallucination 0.15 ])
+)
+```
+"""
+
+_RESULTS_MD = """
+## Training Progression
+
+7 GRPO runs with a **5-point KL beta sweep** {0, 0.2, 0.3, 0.5, 1.0} and a training pipeline overhaul between Runs 4 and 6.
+
+| Beta | Run | Avg Score | Key Finding |
+|------|-----|-----------|-------------|
+| 0.0 | Run 2 | 0.029 | Catastrophic collapse on event_planning |
+| 0.2 | Run 4 | 0.056 | Recovered event_planning, **beats base** (0.175 vs 0.138) |
+| 0.3 | Run 7 | *training* | Reward 0.48-0.73 (highest ever) |
+| 0.5 | Run 5 | *canceled* | Reward stuck at 0 (pre-fix pipeline) |
+| 1.0 | Run 6 | 0.061 | Nearly matches base (fixed pipeline) |
+
+### 4 Root Causes Fixed in Run 6
+
+1. **Example contamination** &mdash; removed misleading field-name example
+2. **Sparse reward** &mdash; added plan-submission bonus + no-plan penalty
+3. **Missing required keys** &mdash; surfaced required fields in observations
+4. **Role mismatch** &mdash; aligned training and eval prompt formats
+
+---
+"""
+
+
+# ---------------------------------------------------------------------------
+# Build the Blocks app
 # ---------------------------------------------------------------------------
 
 def build_gradio_ui() -> gr.Blocks:
 
     with gr.Blocks(title="ClarifyRL — AskBeforeYouAct") as demo:
 
-        # Inject CSS via HTML tag — the only reliable method with mount_gradio_app + Gradio 6.x
         gr.HTML(f"<style>{_CSS}</style>")
-
-        # Header with inline styles as fallback
         gr.HTML(_header_html())
-
-        # Stat cards with inline styles
         gr.HTML(_stat_cards_html())
 
         with gr.Tabs():
 
+            # ── TAB 1: Overview ──────────────────────────────────
             with gr.TabItem("Overview"):
                 gr.Markdown(_OVERVIEW_MD)
+                gr.HTML(_how_it_works_html())
+                gr.HTML(_before_after_html())
+
                 hero = _plot_path("08_training_progression.png")
                 if hero:
                     gr.Image(hero, label="Training Progression & Eval Results")
+
                 gr.Markdown("### Score Table (all runs, n=50 held-out)")
                 gr.Markdown(_load_summary_table())
+
                 si = _plot_path("07_runs_summary_table.png")
                 if si:
                     gr.Image(si, label="Runs Summary")
 
-            with gr.TabItem("Live Demo"):
+            # ── TAB 2: Agent Replays ─────────────────────────────
+            with gr.TabItem("Agent Replays"):
                 gr.Markdown(
-                    "## Try the Environment\n\n"
-                    "Run a **live episode** against the ClarifyRL environment. "
-                    "Select difficulty and click **Run Episode**."
+                    "## Scored Episode Replays\n\n"
+                    "Browse **real eval episodes** where the trained model asked questions and proposed plans. "
+                    "Select a trace from the dropdown to see the full conversation and rubric score."
+                )
+
+                _traces = _load_sample_traces()
+                _labels = []
+                if _traces:
+                    _labels = [
+                        f"{t.get('scenario_id', f'trace-{i}')} | {t.get('family','?')} | score={t.get('final_score',0):.3f}"
+                        for i, t in enumerate(_traces)
+                    ]
+
+                trace_dd = gr.Dropdown(
+                    choices=_labels,
+                    value=_labels[0] if _labels else None,
+                    label="Select an episode",
+                    interactive=True,
+                )
+                trace_chat = gr.Chatbot(label="Episode Replay", height=450)
+
+                if _traces:
+                    def _show(sel):
+                        if not sel:
+                            return []
+                        idx = next((i for i, l in enumerate(_labels) if l == sel), None)
+                        return _format_trace_as_chat(_traces[idx]) if idx is not None else []
+                    trace_dd.change(fn=_show, inputs=[trace_dd], outputs=[trace_chat])
+
+                gr.Markdown(
+                    "---\n### Try the Raw Environment\n\n"
+                    "This runs the **environment only** (no trained model). "
+                    "It demonstrates the API reset/step loop."
                 )
                 with gr.Row():
                     difficulty = gr.Dropdown(["easy", "medium", "hard"], value="medium", label="Difficulty", scale=1)
                     run_btn = gr.Button("Run Episode", variant="primary", scale=1)
-                chatbot = gr.Chatbot(label="Episode Trace", height=450)
+                raw_chat = gr.Chatbot(label="Raw API Trace", height=300)
 
                 def run_ep(diff):
                     try:
                         return asyncio.run(_run_live_episode(diff))
                     except Exception as exc:
                         return [[None, f"Error: {exc}"]]
+                run_btn.click(fn=run_ep, inputs=[difficulty], outputs=[raw_chat])
 
-                run_btn.click(fn=run_ep, inputs=[difficulty], outputs=[chatbot])
-
-                gr.Markdown("---\n### Pre-recorded Eval Traces")
-                tdd = gr.Dropdown(choices=[], label="Select a scored trace", interactive=True)
-                tchat = gr.Chatbot(label="Eval Trace Replay", height=400)
-                _traces = _load_sample_traces()
-                if _traces:
-                    _labels = [f"{t.get('scenario_id', f't-{i}')} (score={t.get('final_score',0):.3f})" for i, t in enumerate(_traces)]
-                    tdd.choices = _labels
-                    def _show(sel):
-                        if not sel: return []
-                        idx = next((i for i, l in enumerate(_labels) if l == sel), None)
-                        return _format_trace_as_chat(_traces[idx]) if idx is not None else []
-                    tdd.change(fn=_show, inputs=[tdd], outputs=[tchat])
-
+            # ── TAB 3: API & Docker ──────────────────────────────
             with gr.TabItem("API & Docker"):
                 gr.Markdown(_API_MD)
 
+            # ── TAB 4: Training Results ──────────────────────────
             with gr.TabItem("Training Results"):
                 gr.Markdown(_RESULTS_MD)
                 for title, fname in [
