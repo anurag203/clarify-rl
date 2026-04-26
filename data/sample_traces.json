@@ -1,0 +1,485 @@
+[
+  {
+    "model_label": "Run 7 (\u03b2=0.3)",
+    "scenario_id": "seed10004_event_planning_medium",
+    "family": "event_planning",
+    "request": "Plan a birthday party.",
+    "final_score": 0.5097222222222222,
+    "questions_asked": 5,
+    "score_breakdown": {
+      "FormatCheckRubric": 1.0,
+      "FieldMatchRubric": 0.4444444444444444,
+      "InfoGainRubric": 0.75,
+      "QuestionEfficiencyRubric": 0.16666666666666663,
+      "HallucinationCheckRubric": 0.75
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant that books and plans things for users.\nThe user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.\n\nYou have three tools:\n  - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).\n  - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.\n  - get_task_info(): re-read the original user request.\n\nStrategy:\n  1. Read the required plan fields listed in the task description.\n  2. Use ask_question to ask about EACH required field you do not already know.\n  3. When you have enough info, call propose_plan with a JSON string containing ALL required fields.\n\nRules:\n  - Be efficient. Each unnecessary question costs reward.\n  - Your plan MUST include every required field listed in the task. Missing fields score zero.\n  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n  - The `plan` argument MUST be a JSON STRING (not a dict). Use the exact field names from the required fields list.\n"
+      },
+      {
+        "role": "user",
+        "content": "USER REQUEST:\nPlan a birthday party.\n\nYou have 10 steps. Available tools: ask_question(question), propose_plan(plan), get_task_info().\n\nRESPONSE FORMAT: Reply with ONE function call only, no other text.\nExamples:\n  ask_question(\"What is the date?\")\n  propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\"}')\n  get_task_info()\n"
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the date of the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"this week.\", \"questions_remaining\": 5, \"field_revealed\": \"date\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the guest list size?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"About 50 people.\", \"questions_remaining\": 4, \"field_revealed\": \"guest_count\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the budget?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 3, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the venue preference?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"At a restaurant.\", \"questions_remaining\": 2, \"field_revealed\": \"venue\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the theme or activity preference?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 1, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "propose_plan('{\"event_type\": \"birthday\", \"date\": \"this week\", \"guest_count\": \"About 50 people.\", \"budget\": \"Up to you on that one.\", \"venue\": \"At a restaurant.\", \"theme_or_activity\": \"Up to you on that one.\"}')"
+      }
+    ]
+  },
+  {
+    "model_label": "Run 4 (\u03b2=0.2)",
+    "scenario_id": "seed10004_event_planning_medium",
+    "family": "event_planning",
+    "request": "Plan a birthday party.",
+    "final_score": 0.5097222222222222,
+    "questions_asked": 5,
+    "score_breakdown": {
+      "FormatCheckRubric": 1.0,
+      "FieldMatchRubric": 0.4444444444444444,
+      "InfoGainRubric": 0.75,
+      "QuestionEfficiencyRubric": 0.16666666666666663,
+      "HallucinationCheckRubric": 0.75
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant that books and plans things for users.\nThe user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.\n\nYou have three tools:\n  - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).\n  - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.\n  - get_task_info(): re-read the original user request.\n\nStrategy:\n  1. Identify which fields the user has NOT specified.\n  2. Use ask_question, ONE question per turn, to fill in just those fields.\n  3. When you have enough info, call propose_plan with a JSON string.\n\nRules:\n  - Be efficient. Each unnecessary question costs reward.\n  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n  - The `plan` argument MUST be a JSON STRING (not a dict). Example: propose_plan(plan='{\"start_time\": \"2pm\", \"duration\": \"30min\"}').\n"
+      },
+      {
+        "role": "user",
+        "content": "USER REQUEST:\nPlan a birthday party.\n\nYou have 10 steps. Available tools: ask_question(question), propose_plan(plan), get_task_info().\n\nRESPONSE FORMAT: Reply with ONE function call only, no other text.\nExamples:\n  ask_question(\"What is the date?\")\n  propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\"}')\n  get_task_info()\n"
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the date of the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"this week.\", \"questions_remaining\": 5, \"field_revealed\": \"date\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What time would you like the party to be held?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 4, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"How many guests are expected at the party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"About 50 people.\", \"questions_remaining\": 3, \"field_revealed\": \"guest_count\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the preferred location for the party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"At a restaurant.\", \"questions_remaining\": 2, \"field_revealed\": \"venue\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the name of the restaurant?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 1, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "propose_plan('{\"event_type\": \"birthday\", \"date\": \"this week\", \"time\": \"Up to you on that one.\", \"guest_count\": \"About 50 people.\", \"venue\": \"At a restaurant.\", \"restaurant_name\": \"Up to you on that one.\"}')"
+      }
+    ]
+  },
+  {
+    "model_label": "Run 4 (\u03b2=0.2)",
+    "scenario_id": "seed10000_event_planning_hard",
+    "family": "event_planning",
+    "request": "Plan a birthday party.",
+    "final_score": 0.4768181818181818,
+    "questions_asked": 5,
+    "score_breakdown": {
+      "FormatCheckRubric": 1.0,
+      "FieldMatchRubric": 0.36363636363636365,
+      "InfoGainRubric": 0.75,
+      "QuestionEfficiencyRubric": 0.16666666666666663,
+      "HallucinationCheckRubric": 0.8
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant that books and plans things for users.\nThe user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.\n\nYou have three tools:\n  - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).\n  - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.\n  - get_task_info(): re-read the original user request.\n\nStrategy:\n  1. Identify which fields the user has NOT specified.\n  2. Use ask_question, ONE question per turn, to fill in just those fields.\n  3. When you have enough info, call propose_plan with a JSON string.\n\nRules:\n  - Be efficient. Each unnecessary question costs reward.\n  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n  - The `plan` argument MUST be a JSON STRING (not a dict). Example: propose_plan(plan='{\"start_time\": \"2pm\", \"duration\": \"30min\"}').\n"
+      },
+      {
+        "role": "user",
+        "content": "USER REQUEST:\nPlan a birthday party.\n\nYou have 12 steps. Available tools: ask_question(question), propose_plan(plan), get_task_info().\n\nRESPONSE FORMAT: Reply with ONE function call only, no other text.\nExamples:\n  ask_question(\"What is the date?\")\n  propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\"}')\n  get_task_info()\n"
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the date of the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"this week.\", \"questions_remaining\": 5, \"field_revealed\": \"date\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the time of the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 4, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the location of the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"At a office.\", \"questions_remaining\": 3, \"field_revealed\": \"venue\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the number of guests?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"About 100 people.\", \"questions_remaining\": 2, \"field_revealed\": \"guest_count\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the theme or decoration style of the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"surprise.\", \"questions_remaining\": 1, \"field_revealed\": \"theme\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "propose_plan('{\"event_type\": \"birthday\", \"date\": \"this week\", \"time\": \"Up to you on that one.\", \"venue\": \"At a office.\", \"guest_count\": \"About 100 people.\", \"theme\": \"surprise.\"}')"
+      }
+    ]
+  },
+  {
+    "model_label": "Run 7 (\u03b2=0.3)",
+    "scenario_id": "seed10010_event_planning_hard",
+    "family": "event_planning",
+    "request": "Plan a birthday party.",
+    "final_score": 0.4363636363636364,
+    "questions_asked": 5,
+    "score_breakdown": {
+      "FormatCheckRubric": 1.0,
+      "FieldMatchRubric": 0.2727272727272727,
+      "InfoGainRubric": 0.75,
+      "QuestionEfficiencyRubric": 0.16666666666666663,
+      "HallucinationCheckRubric": 0.8333333333333334
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant that books and plans things for users.\nThe user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.\n\nYou have three tools:\n  - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).\n  - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.\n  - get_task_info(): re-read the original user request.\n\nStrategy:\n  1. Read the required plan fields listed in the task description.\n  2. Use ask_question to ask about EACH required field you do not already know.\n  3. When you have enough info, call propose_plan with a JSON string containing ALL required fields.\n\nRules:\n  - Be efficient. Each unnecessary question costs reward.\n  - Your plan MUST include every required field listed in the task. Missing fields score zero.\n  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n  - The `plan` argument MUST be a JSON STRING (not a dict). Use the exact field names from the required fields list.\n"
+      },
+      {
+        "role": "user",
+        "content": "USER REQUEST:\nPlan a birthday party.\n\nYou have 12 steps. Available tools: ask_question(question), propose_plan(plan), get_task_info().\n\nRESPONSE FORMAT: Reply with ONE function call only, no other text.\nExamples:\n  ask_question(\"What is the date?\")\n  propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\"}')\n  get_task_info()\n"
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the date of the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"tomorrow.\", \"questions_remaining\": 5, \"field_revealed\": \"date\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the location of the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"At a home.\", \"questions_remaining\": 4, \"field_revealed\": \"venue\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the guest list size?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"About 50 people.\", \"questions_remaining\": 3, \"field_revealed\": \"guest_count\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the theme or decoration style of the party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"casual.\", \"questions_remaining\": 2, \"field_revealed\": \"theme\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the budget for the birthday party?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Budget around <$100.\", \"questions_remaining\": 1, \"field_revealed\": \"budget_band\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "propose_plan('{\"event_type\": \"birthday\", \"date\": \"tomorrow\", \"venue\": \"At a home\", \"guest_count\": \"About 50 people\", \"theme\": \"casual\", \"budget_band\": \"Budget around <$100.\"}')"
+      }
+    ]
+  },
+  {
+    "model_label": "Run 7 (\u03b2=0.3)",
+    "scenario_id": "seed10002_meeting_scheduling_easy",
+    "family": "meeting_scheduling",
+    "request": "Schedule a sync.",
+    "final_score": 0.425,
+    "questions_asked": 5,
+    "score_breakdown": {
+      "FormatCheckRubric": 1.0,
+      "FieldMatchRubric": 0.5,
+      "InfoGainRubric": 0.5,
+      "QuestionEfficiencyRubric": 0.16666666666666663,
+      "HallucinationCheckRubric": 0.33333333333333337
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant that books and plans things for users.\nThe user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.\n\nYou have three tools:\n  - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).\n  - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.\n  - get_task_info(): re-read the original user request.\n\nStrategy:\n  1. Read the required plan fields listed in the task description.\n  2. Use ask_question to ask about EACH required field you do not already know.\n  3. When you have enough info, call propose_plan with a JSON string containing ALL required fields.\n\nRules:\n  - Be efficient. Each unnecessary question costs reward.\n  - Your plan MUST include every required field listed in the task. Missing fields score zero.\n  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n  - The `plan` argument MUST be a JSON STRING (not a dict). Use the exact field names from the required fields list.\n"
+      },
+      {
+        "role": "user",
+        "content": "USER REQUEST:\nSchedule a sync.\n\nYou have 8 steps. Available tools: ask_question(question), propose_plan(plan), get_task_info().\n\nRESPONSE FORMAT: Reply with ONE function call only, no other text.\nExamples:\n  ask_question(\"What is the date?\")\n  propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\"}')\n  get_task_info()\n"
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the date?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"No preference, you choose.\", \"questions_remaining\": 5, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the time?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"No preference, you choose.\", \"questions_remaining\": 4, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the location?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"No preference, you choose.\", \"questions_remaining\": 3, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the number of attendees?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"whole team.\", \"questions_remaining\": 2, \"field_revealed\": \"participants\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the event type?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"No preference, you choose.\", \"questions_remaining\": 1, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\", \"time\": \"18:00\", \"location\": \"Conference Room A\", \"participants\": \"whole team\"}')"
+      }
+    ]
+  },
+  {
+    "model_label": "Run 4 (\u03b2=0.2)",
+    "scenario_id": "seed10010_event_planning_medium",
+    "family": "event_planning",
+    "request": "Set up a celebration.",
+    "final_score": 0.3986111111111111,
+    "questions_asked": 5,
+    "score_breakdown": {
+      "FormatCheckRubric": 1.0,
+      "FieldMatchRubric": 0.2222222222222222,
+      "InfoGainRubric": 0.75,
+      "QuestionEfficiencyRubric": 0.16666666666666663,
+      "HallucinationCheckRubric": 0.75
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant that books and plans things for users.\nThe user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.\n\nYou have three tools:\n  - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).\n  - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.\n  - get_task_info(): re-read the original user request.\n\nStrategy:\n  1. Identify which fields the user has NOT specified.\n  2. Use ask_question, ONE question per turn, to fill in just those fields.\n  3. When you have enough info, call propose_plan with a JSON string.\n\nRules:\n  - Be efficient. Each unnecessary question costs reward.\n  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n  - The `plan` argument MUST be a JSON STRING (not a dict). Example: propose_plan(plan='{\"start_time\": \"2pm\", \"duration\": \"30min\"}').\n"
+      },
+      {
+        "role": "user",
+        "content": "USER REQUEST:\nSet up a celebration.\n\nYou have 10 steps. Available tools: ask_question(question), propose_plan(plan), get_task_info().\n\nRESPONSE FORMAT: Reply with ONE function call only, no other text.\nExamples:\n  ask_question(\"What is the date?\")\n  propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\"}')\n  get_task_info()\n"
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the date of the celebration?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"this week.\", \"questions_remaining\": 5, \"field_revealed\": \"date\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What time of day is the celebration?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 4, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the event type?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 3, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the number of guests?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"About 20 people.\", \"questions_remaining\": 2, \"field_revealed\": \"guest_count\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the preferred location for the celebration?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"At a home.\", \"questions_remaining\": 1, \"field_revealed\": \"venue\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "propose_plan('{\"event_type\": \"celebration\", \"date\": \"this week\", \"time\": \"Up to you on that one.\", \"guest_count\": \"About 20 people.\", \"venue\": \"At a home.\", \"duration\": \"To be determined\"}')"
+      }
+    ]
+  },
+  {
+    "model_label": "Run 1 (0.6B)",
+    "scenario_id": "seed10004_event_planning_hard",
+    "family": "event_planning",
+    "request": "Organize a team event.",
+    "final_score": 0.3818181818181819,
+    "questions_asked": 5,
+    "score_breakdown": {
+      "FormatCheckRubric": 1.0,
+      "FieldMatchRubric": 0.36363636363636365,
+      "InfoGainRubric": 0.5,
+      "QuestionEfficiencyRubric": 0.16666666666666663,
+      "HallucinationCheckRubric": 0.5
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant that books and plans things for users.\nThe user's request will be intentionally ambiguous \u2014 you do NOT yet have all the information needed to make a good plan.\n\nYou have three tools:\n  - ask_question(question): ask the user ONE targeted clarifying question (max 6 across the episode).\n  - propose_plan(plan): submit your final plan as a JSON STRING with the required fields. This ENDS the episode.\n  - get_task_info(): re-read the original user request.\n\nStrategy:\n  1. Identify which fields the user has NOT specified.\n  2. Use ask_question, ONE question per turn, to fill in just those fields.\n  3. When you have enough info, call propose_plan with a JSON string.\n\nRules:\n  - Be efficient. Each unnecessary question costs reward.\n  - NEVER include fields in your plan that you weren't told about. No hallucinating values.\n  - The `plan` argument MUST be a JSON STRING (not a dict). Example: propose_plan(plan='{\"start_time\": \"2pm\", \"duration\": \"30min\"}').\n"
+      },
+      {
+        "role": "user",
+        "content": "USER REQUEST:\nOrganize a team event.\n\nYou have 12 steps. Available tools: ask_question(question), propose_plan(plan), get_task_info().\n\nRESPONSE FORMAT: Reply with ONE function call only, no other text.\nExamples:\n  ask_question(\"What is the date?\")\n  propose_plan('{\"event_type\": \"birthday\", \"date\": \"2024-12-25\"}')\n  get_task_info()\n"
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What are the specific details of the team members and their roles?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 5, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the specific time and location for the event?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"At a home.\", \"questions_remaining\": 4, \"field_revealed\": \"venue\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the list of team members and their roles?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 3, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the agenda or topics to be discussed at the event?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"Up to you on that one.\", \"questions_remaining\": 2, \"field_revealed\": null, \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "ask_question(\"What is the duration of the event and how many participants are expected to attend?\")"
+      },
+      {
+        "role": "user",
+        "content": "{\"answer\": \"About 100 people.\", \"questions_remaining\": 1, \"field_revealed\": \"guest_count\", \"duplicate\": false, \"over_cap\": false}\n\nReminder: Reply with ONE function call only (ask_question/propose_plan/get_task_info), no other text."
+      },
+      {
+        "role": "assistant",
+        "content": "propose_plan('{\"event_type\": \"team_event\", \"date\": \"2024-12-25\", \"venue\": \"home\", \"guest_count\": \"100\", \"agenda_topics\": \"list of topics and discussion\"}')"
+      }
+    ]
+  }
+]

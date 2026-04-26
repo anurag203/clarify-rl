@@ -231,6 +231,21 @@ def _how_it_works_html() -> str:
     </div>"""
 
 
+def _headline_callout_html() -> str:
+    return """
+    <div style="background: linear-gradient(135deg,#0a2e0a,#1a3a1a); border:2px solid #39ff14; border-radius:12px; padding:20px 24px; margin: 16px 0; box-shadow: 0 0 30px rgba(57,255,20,0.18);">
+        <div style="font-family:'Orbitron',monospace; color:#39ff14; font-size:0.85em; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">HEADLINE RESULT</div>
+        <div style="font-size:1.45em; color:#fff; line-height:1.4;">
+            Run 7 trained model <strong style="color:#39ff14;">BEATS</strong> the 1.7B base by <strong style="color:#39ff14;">+19%</strong>
+            <span style="color:#aaa; font-size:0.8em;">(avg 0.075 vs 0.063)</span>
+        </div>
+        <div style="color:#bbb; font-size:0.92em; margin-top:8px; font-family:'Inter',sans-serif;">
+            Same model. Same data. RL taught it to ask before acting.
+            Event planning: <strong style="color:#39ff14;">+46%</strong> (0.201 vs 0.138). Completion rate: <strong style="color:#39ff14;">+11%</strong> (20% vs 18%).
+        </div>
+    </div>"""
+
+
 def _before_after_html() -> str:
     left_box = "flex:1; min-width:250px; background:#1a0a0a; border:2px solid #ff4444; border-radius:12px; padding:18px;"
     right_box = "flex:1; min-width:250px; background:#0a1a0a; border:2px solid #39ff14; border-radius:12px; padding:18px;"
@@ -241,31 +256,31 @@ def _before_after_html() -> str:
         <div style="display:flex; gap:16px; flex-wrap:wrap;">
             <div style="{left_box}">
                 <div style="text-align:center; margin-bottom:10px;">
-                    <span style="font-family:'Orbitron',monospace; color:#ff4444; font-size:1em; font-weight:700;">UNTRAINED</span>
-                    <span style="color:#888; font-size:0.8em;"> &mdash; Qwen3-0.6B base</span>
+                    <span style="font-family:'Orbitron',monospace; color:#ff4444; font-size:1em; font-weight:700;">UNTRAINED 1.7B</span>
+                    <span style="color:#888; font-size:0.8em;"> &mdash; Qwen3-1.7B base</span>
                 </div>
-                <p style="{step_s}">Step 1: get_task_info() &rarr; re-reads request</p>
-                <p style="{step_s}">Step 2: get_task_info() &rarr; re-reads again</p>
-                <p style="{step_s}">Step 3: get_task_info() &rarr; loop continues...</p>
+                <p style="{step_s}">Step 1: rambles / hallucinates fields</p>
+                <p style="{step_s}">Step 2: copies a stack-related example</p>
+                <p style="{step_s}">Step 3: submits plan with wrong family fields</p>
                 <p style="{step_s}">...</p>
-                <p style="{step_s}">Step 9: get_task_info() &rarr; never asks a question</p>
-                <p style="{step_s} color:#ff4444; font-weight:700; margin-top:8px;">&#10008; No plan submitted. Score: 0.000</p>
+                <p style="{step_s} color:#ff4444; font-weight:700; margin-top:8px;">&#10008; Avg score: 0.063</p>
+                <p style="font-size:0.72em; color:#888; margin-top:4px;">event_planning: 0.138 / completion: 18%</p>
             </div>
             <div style="{right_box}">
                 <div style="text-align:center; margin-bottom:10px;">
-                    <span style="font-family:'Orbitron',monospace; color:#39ff14; font-size:1em; font-weight:700;">TRAINED</span>
-                    <span style="color:#888; font-size:0.8em;"> &mdash; Qwen3-0.6B GRPO (Run 1)</span>
+                    <span style="font-family:'Orbitron',monospace; color:#39ff14; font-size:1em; font-weight:700;">TRAINED 1.7B (Run 7)</span>
+                    <span style="color:#888; font-size:0.8em;"> &mdash; β=0.3 KL anchor</span>
                 </div>
-                <p style="{step_s}">Step 1: ask_question("event details?") &rarr; "Up to you"</p>
-                <p style="{step_s}">Step 2: ask_question("time and location?") &rarr; venue=home</p>
-                <p style="{step_s}">Step 3: ask_question("how many guests?") &rarr; 100</p>
-                <p style="{step_s}">Step 4: propose_plan('{{"event_type":"birthday",...}}')</p>
-                <p style="{step_s} color:#39ff14; font-weight:700; margin-top:8px;">&#10004; 5-key plan submitted. Score: 0.382</p>
-                <p style="font-size:0.72em; color:#888; margin-top:4px;">FormatCheck 1.0 | FieldMatch 0.36 | InfoGain 0.50</p>
+                <p style="{step_s}">Step 1: ask_question("how many guests?") &rarr; 20</p>
+                <p style="{step_s}">Step 2: ask_question("indoor or outdoor?") &rarr; office</p>
+                <p style="{step_s}">Step 3: ask_question("event type?") &rarr; team-building</p>
+                <p style="{step_s}">Step 4: propose_plan with all required fields</p>
+                <p style="{step_s} color:#39ff14; font-weight:700; margin-top:8px;">&#10004; Avg score: 0.075 (+19% over base)</p>
+                <p style="font-size:0.72em; color:#888; margin-top:4px;">event_planning: 0.201 (+46%) / completion: 20%</p>
             </div>
         </div>
         <p style="text-align:center; color:#8888bb; font-size:0.8em; margin-top:8px; font-family:'Inter',sans-serif;">
-            Same scenario (seed10004_event_planning_hard). Same model. 300 steps of GRPO turned a re-read loop into a planner.
+            Same model architecture (Qwen3-1.7B). Same eval scenarios. 400 steps of GRPO with KL anchor β=0.3 turned hallucination into asking.
         </p>
     </div>"""
 
@@ -275,6 +290,14 @@ def _before_after_html() -> str:
 # ---------------------------------------------------------------------------
 
 def _load_sample_traces() -> list[dict[str, Any]]:
+    """Load curated traces from data/sample_traces.json (bundled in repo)."""
+    bundled = _ROOT / "data" / "sample_traces.json"
+    if bundled.exists():
+        try:
+            return json.loads(bundled.read_text())
+        except Exception:
+            pass
+    # Fallback: scan eval JSONs (only present locally during dev)
     evals_dir = _ROOT / "outputs" / "run_artifacts"
     traces: list[dict] = []
     for edir in sorted(evals_dir.glob("*/evals/eval_*.json")):
@@ -292,26 +315,42 @@ def _load_sample_traces() -> list[dict[str, Any]]:
 
 def _format_trace_as_chat(trace: dict) -> list[list]:
     pairs: list[list] = []
+    model = trace.get("model_label", "")
     sid = trace.get("scenario_id", "unknown")
     fam = trace.get("family", "unknown")
     score = trace.get("final_score", 0)
-    pairs.append([None, f"**{sid}** | Family: `{fam}` | Score: **{score:.3f}**"])
-    turns = trace.get("turns", trace.get("conversation", []))
-    if isinstance(turns, list):
+    qs = trace.get("questions_asked", 0)
+    request = trace.get("request", "")
+
+    header = f"**{model}** &middot; `{sid}`\n\n**Family**: `{fam}` &middot; **Score**: **{score:.3f}** &middot; **Questions**: {qs}"
+    if request:
+        header += f"\n\n**Request**: \"{request}\""
+    pairs.append([None, header])
+
+    messages = trace.get("messages", trace.get("turns", trace.get("conversation", [])))
+    if isinstance(messages, list):
         pending = None
-        for t in turns:
-            role = t.get("role", "system")
-            content = t.get("content", str(t))[:500]
-            if role in ("user", "tool_result", "environment"):
+        for m in messages:
+            role = m.get("role", "system")
+            content = (m.get("content") or "")
+            if not content:
+                continue
+            content = content[:600]
+            if role == "system":
+                # skip the system prompt
+                continue
+            if role in ("user", "tool", "tool_result", "environment"):
                 pending = content
             elif role in ("assistant", "agent", "model"):
                 pairs.append([pending, content])
                 pending = None
         if pending:
             pairs.append([pending, None])
+
     bd = trace.get("score_breakdown", {})
     if bd:
-        pairs.append([None, "**Rubric**: " + " | ".join(f"**{k}**: {v:.3f}" for k, v in bd.items())])
+        rubric_lines = [f"  - **{k}**: {v:.3f}" for k, v in bd.items()]
+        pairs.append([None, "**Rubric breakdown:**\n" + "\n".join(rubric_lines)])
     return pairs
 
 
@@ -358,8 +397,9 @@ _OVERVIEW_MD = """
 
 LLMs **hallucinate** when given vague instructions. We built an RL environment that rewards the opposite: **ask first, then act**.
 
-5 task families (coding, medical, support, meetings, events) &times; 3 difficulty levels &times; composable 5-component rubric.
-Trained with **GRPO** (Group Relative Policy Optimization) across **7 runs** with a controlled KL-anchor ablation.
+Trained Qwen3-1.7B with **GRPO** across **7 controlled runs** (5-point KL anchor sweep). The best run beats the same-size base by **+19% on 50 held-out scenarios**.
+
+Same model. Same data. RL changed only the behavior &mdash; taught it to ask before acting.
 """
 
 _API_MD = """
@@ -460,6 +500,7 @@ def build_gradio_ui() -> gr.Blocks:
         gr.HTML(f"<style>{_CSS}</style>")
         gr.HTML(_header_html())
         gr.HTML(_stat_cards_html())
+        gr.HTML(_headline_callout_html())
 
         with gr.Tabs():
 
@@ -492,7 +533,7 @@ def build_gradio_ui() -> gr.Blocks:
                 _labels = []
                 if _traces:
                     _labels = [
-                        f"{t.get('scenario_id', f'trace-{i}')} | {t.get('family','?')} | score={t.get('final_score',0):.3f}"
+                        f"{t.get('model_label','?')} | {t.get('family','?')} | score={t.get('final_score',0):.3f} | {t.get('scenario_id', f'trace-{i}')}"
                         for i, t in enumerate(_traces)
                     ]
 

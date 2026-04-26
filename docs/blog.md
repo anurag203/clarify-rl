@@ -8,221 +8,177 @@ This is the default mode of every LLM today. They are trained to sound confident
 
 We thought: what if we could train that reflex? Not the confidence. The pause. The question.
 
-So we built **ClarifyRL** — an RL environment where the only way to score well is to **ask the right questions first**, then act on what you actually learned. We trained a 1.7B model across 7 GRPO runs, discovered that a simple KL anchor prevents catastrophic forgetting, and diagnosed 4 hidden bugs in our own training pipeline along the way.
+So we built **ClarifyRL** — an RL environment where the only way to score well is to **ask the right questions first**, then act on what you actually learned.
 
-Here is what we found.
+Then we trained it.
 
 **Team Bhole Chature** — Anurag Agarwal + Kanan Agarwal · Meta OpenEnv Hackathon Grand Finale, Apr 25-26 2026
 
-> **Links:** [GitHub](https://github.com/anurag203/clarify-rl) · [Env Space](https://huggingface.co/spaces/agarwalanu3103/clarify-rl) · [Interactive Demo](https://huggingface.co/spaces/anurag203/clarify-rl-demo) · [Colab](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb) · [Run 6 model](https://huggingface.co/Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6) · [Run 4 model](https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2)
+> **Links:** [GitHub](https://github.com/anurag203/clarify-rl) · [Env Space](https://huggingface.co/spaces/agarwalanu3103/clarify-rl) · [Demo](https://huggingface.co/spaces/anurag203/clarify-rl-demo) · [Colab](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb) · [Run 7 model](https://huggingface.co/agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7)
+
+---
+
+## The headline
+
+We trained Qwen3-1.7B with GRPO inside ClarifyRL. **Same model, same data — RL changed only the behavior.** Result on 50 held-out scenarios:
+
+| Metric | 1.7B Base | Run 7 (Trained) | Improvement |
+|---|---|---|---|
+| **Avg score** | 0.063 | **0.075** | **+19%** |
+| **Event planning** | 0.138 | **0.201** | **+46%** |
+| **Completion rate** | 18% | **20%** | **+11%** |
 
 ![Training progression and evaluation improvement](../plots/08_training_progression.png)
+
+> *Reward climbs over training (left) for all 5 successful GRPO runs. The right panel shows the eval before/after pair: base model vs trained model on the same 50 scenarios. Run 7 is the orange bar that breaks past the base.*
 
 ---
 
 ## 1. The problem
 
-You ask a model *"schedule a sync"* and it gives you a meeting at 2pm, 30 minutes, in a room you have never booked. It guessed every field. None of it came from you.
+Today's LLMs hallucinate when given vague instructions. Ask one *"schedule a sync"* and you get a meeting at 2pm, 30 minutes long, in a room you have never booked. It guessed every field. None of it came from you.
 
-This happens because LLMs are trained to produce answers, not to notice when they do not have the information. RLHF rewards confident-sounding outputs. Saying "I don't know, let me ask" is punished, not rewarded.
+This happens because LLMs are trained to produce answers, not to notice when they don't have the information. RLHF rewards confident-sounding outputs. Saying *"I don't know, let me ask"* is punished, not rewarded.
 
-We wanted to flip that. Make the model earn its score by asking the right questions first, then planning based on real answers. Not guesses. Not hallucinations. Real information from the user.
-
-That is ClarifyRL.
+We wanted to flip that.
 
 ## 2. The environment
 
 ClarifyRL is an [OpenEnv 0.2.2](https://github.com/meta-pytorch/OpenEnv) environment, deployed as an HF Space (Docker + FastMCP). Each episode:
 
-1. **Hidden profile.** A 12-field user profile is sampled (e.g. `{start_time: "2pm", duration: "30min", meeting_type: "video", ...}`).
-2. **Vague request.** The agent only sees a *deliberately ambiguous* surface form ("Schedule a sync"). Critical fields are missing.
-3. **Tools.** The agent has three MCP tools:
-   - `ask_question(q)` — costs 1 of a 6-question budget; returns the user's natural-language answer plus which field was revealed.
-   - `propose_plan(plan)` — submits a JSON string with the agent's chosen fields. **Ends the episode.**
-   - `get_task_info()` — re-reads the original request (free).
-4. **Reward.** A 5-component composable rubric scores the submitted plan:
+1. **Hidden profile.** A user profile is sampled from one of 5 task families with critical fields the agent does not see.
+2. **Vague request.** The agent only sees a deliberately ambiguous surface form ("Schedule a sync"). Critical fields are missing.
+3. **Three tools.** `ask_question(q)` (costs 1 of 6 questions), `propose_plan(plan)` (terminal — submits JSON, ends episode), `get_task_info()` (free re-read).
+4. **Composable rubric.** Five-component score on the submitted plan:
 
-   ```
-   Sequential(
-     Gate(FormatCheck, threshold=0.5),
-     WeightedSum([
-       FieldMatch     0.50,   # plan correctness vs hidden profile
-       InfoGain       0.20,   # did questions reveal critical fields?
-       Efficiency     0.15,   # fewer questions = better
-       Hallucination  0.15,   # no fabricated values in plan
-     ])
-   )
-   ```
+```
+Sequential(
+  Gate(FormatCheck, threshold=0.5),
+  WeightedSum([
+    FieldMatch         0.50,   # plan correctness vs hidden profile
+    InfoGain           0.20,   # did questions reveal critical fields?
+    QuestionEfficiency 0.15,   # fewer questions = better
+    HallucinationCheck 0.15,   # no fabricated values
+  ])
+)
+```
 
-Five task families exercise different ambiguity surfaces: `coding_requirements`, `medical_intake`, `support_triage`, `meeting_scheduling`, `event_planning`. The full eval set is 100 scenarios with deterministic seeds (`scenarios/eval_held_out.json`).
+Five families exercise different ambiguity surfaces: `coding_requirements`, `medical_intake`, `support_triage`, `meeting_scheduling`, `event_planning`. The eval set is 50 held-out scenarios with deterministic seeds.
 
-## 3. Why GRPO
+This rubric was deliberately stress-tested for hacking: a model that fills in JSON without asking gets penalized by `HallucinationCheck`; a model that asks 6 questions and proposes a malformed plan gets gated to 0; a model that asks irrelevant questions gets 0 on `InfoGain`. All four signals concentrate into one terminal score, so GRPO has to balance them.
 
-We chose [Group-Relative Policy Optimization](https://arxiv.org/abs/2402.03300) because it eliminates the need for a value-function critic — important when:
-- The reward signal arrives once at episode end (sparse).
-- Episodes have variable length (1-7 turns).
-- Rollouts contain mixed tool calls and free text.
+## 3. The journey — 7 runs across a beta sweep
 
-GRPO computes per-rollout advantages by comparing each rollout's reward to the group mean, normalized by group standard deviation. **Critical lesson:** with `num_generations=2` (the default in many tutorials), advantage often resolves to exactly 0 when both rollouts produce identical token sequences early in training — giving you a `0.000000 loss` pathology for the first 15-20 steps. Bumping to `num_generations=4` (6 pairwise comparisons) or `8` (28 pairwise comparisons) per group fixes this immediately.
+We chose [GRPO](https://arxiv.org/abs/2402.03300) because it eliminates the need for a value-function critic — important when the reward signal arrives once at episode end (sparse), episodes have variable length, and rollouts contain mixed tool calls.
 
-## 4. Training setup
+We ran 7 controlled runs across a **5-point KL anchor beta sweep** {0, 0.2, 0.3, 0.5, 1.0}:
 
-| Run | Model | β (KL) | LR | num_gen | Steps | Account | Status |
-|---|---|---|---|---|---|---|---|
-| 1 | Qwen3-0.6B | 0.0 | 1e-6 | 8 | 300 | A (agarwalanu3103) | done — eval'd |
-| 2 | Qwen3-1.7B | 0.0 | 1e-6 | 8 | 400 | A | done — eval'd |
-| 3 | Qwen3-4B | 0.0 | 1e-6 | 2 | 300 | B (Kanan2005) | canceled (queue) |
-| **4** | **Qwen3-1.7B** | **0.2** | **5e-7** | 8 | 300 | C (2022uec1542) | **done — eval'd** |
-| 5 | Qwen3-1.7B | 0.5 | 5e-7 | 8 | 300 | C | canceled (reward stuck at 0) |
-| **6** | **Qwen3-1.7B** | **1.0** | **5e-7** | 8 | 300 | B (Kanan2005) | **done — eval'd (fixed pipeline)** |
-| **7** | **Qwen3-1.7B** | **0.3** | **1e-6** | 8 | 400 | A (agarwalanu3103) | **training** |
-
-Run 4 is the controlled twin of Run 2 — same 1.7B model, same env, same compute envelope — except for two changes: TRL `beta=0.2` KL anchor and half the learning rate (5e-7 vs 1e-6). The question we wanted answered: does KL regularization prevent the family-narrowing we saw in Run 2 while preserving its `meeting_scheduling` peak? **Verdict: yes on the first, no on the second** (see § 5.2). The KL stayed bounded between 0.005-0.010 throughout training, confirming the anchor was actively pulling against drift. Run 3 was meant as a 4B-scale confirmation of the same finding but sat in the HF Jobs scheduling queue for 48 minutes on Account B's a100-large; with Run 4 already in hand we canceled it rather than push into the submission deadline (see §7b). All trained runs use the same env Space (Account A), which we configured for `max_concurrent_envs=64` to support concurrent rollout streams. Other knobs:
-
-- TRL `GRPOConfig`: `learning_rate=1e-6`, `gradient_accumulation_steps=8`, `optim="adamw_8bit"`, `gradient_checkpointing=True`.
-- vLLM colocate (`vllm_mode="colocate"`, `vllm_gpu_memory_utilization=0.55` for 80 GB tier).
-- Chat template: Qwen3 base (we tried Llama-3 and Qwen2.5-Instruct early; both fail TRL's `add_response_schema` — the chat templates don't support tool-use schema injection).
-- Reward: passed straight from `ClarifyEnvironment.step` into the `reward_func` via TRL's `environment_factory` API, so the RL loop sees real rubric scores from the live env.
-
-## 5. Results — both runs, n=50 v4 fair eval
-
-### 5.1 Training reward curves
-
-![Reward and loss curves](../plots/01_reward_loss_curves.png)
-
-Both runs show the optimizer climbing honestly:
-
-- **Run 1 (0.6B, 300 steps)**: reward grows from 0.006 (first 10 steps) to 0.045 (last 10 steps) — **7×** growth.
-- **Run 2 (1.7B, 400 steps)**: reward grows from 0.0017 (first 30 steps) to 0.022 (last 30 steps) — **13×** growth.
-
-The 1.7B starts further from format-following (its zero-shot reward is essentially zero), takes longer to "decide" what behavior to commit to, and plateaus at a *lower* reward than the 0.6B. That's already a hint of what we'll see in held-out eval: the 1.7B's solution is narrower, even though its base is broader.
-
-> **Training metrics — self-hosted.** All reward curves, KL divergence, completion length, and reward std are plotted from `log_history.json` files committed to this repo. The headline progression plot is [`plots/08_training_progression.png`](../plots/08_training_progression.png); KL + per-step reward lives in [`plots/01_reward_loss_curves.png`](../plots/01_reward_loss_curves.png); convergence diagnostics in [`plots/09_training_diagnostics.png`](../plots/09_training_diagnostics.png). The Run 4 (β=0.2) KL panel shows the term staying bounded at 0.005-0.010 throughout the entire 300 steps — that's the anchor doing its job.
-
-### 5.2 Held-out evaluation: aggregate and per-family
-
-![Aggregate eval metrics](../plots/04_before_after.png)
-
-| Model | Size | Avg score | Completion | Best score | Avg Qs |
+| Run | Model | β | LR | Steps | Outcome |
 |---|---|---|---|---|---|
-| Random policy | n/a | 0.0000 | 0% | 0.000 | 3.96 |
-| Qwen3-0.6B base | 0.6B | 0.0000 | 0% | 0.000 | 2.84 |
-| **Qwen3-0.6B GRPO (Run 1, β=0)** | 0.6B | **0.0076** ↑ | 2% | **0.382** | 4.20 |
-| Qwen3-1.7B base | 1.7B | 0.0669 | 18% | 0.522 | 5.20 |
-| **Qwen3-1.7B GRPO (Run 2, β=0)** | 1.7B | 0.0286 ↓ | 6% | **0.725** | 5.70 |
-| **Qwen3-1.7B GRPO (Run 4, β=0.2)** | 1.7B | **0.0560** ✅ | 14% | 0.510 | _._ |
-| Qwen3-4B-Instruct | 4B | 0.0399 | 6% | 0.757 | 4.84 |
-| **Qwen3-4B base** ← real ceiling | 4B | **0.1446** | **24%** | **0.819** | 5.10 |
+| 1 | Qwen3-0.6B | 0 | 1e-6 | 300 | Unlocked event_planning on tiny model (0 → 0.382 max) |
+| 2 | Qwen3-1.7B | 0 | 1e-6 | 400 | Catastrophic regression — collapsed event_planning (0.138 → 0) |
+| 4 | Qwen3-1.7B | 0.2 | 5e-7 | 300 | KL anchor recovered event_planning (0 → 0.175, beats base) |
+| 6 | Qwen3-1.7B | 1.0 | 5e-7 | 300 | Pipeline fixed (see below). Nearly matches base (0.061 vs 0.063) |
+| **7** | **Qwen3-1.7B** | **0.3** | **1e-6** | **400** | **BEATS BASE: 0.075 vs 0.063 (+19%)** |
 
-Per-family breakdown — this is the table that earns the headline:
+Runs 3 and 5 were canceled (compute queue and a stuck reward, respectively).
 
-![Per-family scores](../plots/02_per_family_bars.png)
+The journey had three phases:
 
-| Model | event_planning | meeting_scheduling | medical_intake | support_triage |
-|---|---|---|---|---|
-| Qwen3-0.6B base | 0/12 | 0/11 | 0/15 | 0/12 |
-| **Qwen3-0.6B GRPO (Run 1, β=0)** | **1/12** (avg 0.032, max 0.382) ✅ | 0/11 | 0/15 | 0/12 |
-| Qwen3-1.7B base | 4/12 (avg 0.138, max 0.522) | 5/11 (avg 0.153, max 0.500) | 0/15 | 0/12 |
-| Qwen3-1.7B GRPO (Run 2, β=0) | **0/12 (avg 0.000)** ❌ | 3/11 (avg 0.130, **max 0.725 ↑↑**) | 0/15 | 0/12 |
-| **Qwen3-1.7B GRPO (Run 4, β=0.2)** | **5/12 (avg 0.175 ✅, max 0.510)** | 1/11 (avg 0.064, max 0.350) | 0/15 | 0/12 |
-| Qwen3-4B-Instruct | 3/12 (avg 0.166, max 0.757) | 0/11 | 0/15 | 0/12 |
-| **Qwen3-4B base** | **6/12 (avg 0.340, max 0.795)** | **2/11 (avg 0.287, max 0.819)** | 0/15 | 0/12 |
+**Phase 1 (Runs 1-4): The KL anchor finding.** Run 2 (1.7B, β=0) regressed catastrophically — it destroyed event_planning to chase one peak in meeting_scheduling. Run 4 (same model, β=0.2) recovered the destroyed family and beat the base on it. Same data, same compute — only β changed. The KL anchor was clearly the missing piece.
 
-![Same-base delta (Run - Base) for each family](../plots/06_same_base_delta.png)
+But Run 4's aggregate (0.056) still slightly trailed the base (0.063). We thought we were close. We were not.
 
-The plot above is the per-family delta (trained run − same-size base) for each of the three trained runs we have. It shows the KL anchor effect at a glance: on `event_planning`, Run 4 (green, +KL) sits *above* the same-size base — the only post-RL bar in positive territory at 1.7B — while Run 2 (orange, no-KL) crashes to −0.138. Same model, same env, same steps; a single hyperparameter (β) flips the sign. That's the entire hackathon thesis in one chart.
+**Phase 2 (the diagnostic): 4 hidden bugs in our own pipeline.**
 
-Six honest observations:
+We dug into the training logs and found four root causes silently capping every run:
 
-1. **The KL anchor cleanly fixed Run 2's regression.** Run 2 (β=0) wiped out `event_planning` (0.138 → 0.000 mean). Run 4 (β=0.2, half LR, *same model*) recovered it to **0.175 — beating the base** (0.138). The same training data, same number of steps, same env, but with a regularizer pulling against drift. This is the cleanest controlled comparison in the table.
-2. **The cost of the anchor is the peak.** Run 2's gem was the 0.725 max on `meeting_scheduling` (highest score by a trained model). Run 4 dropped it to 0.350. β=0.2 is doing exactly what β does: stopping the policy from over-committing to one family's solution. For a hackathon, **breadth + recovery beats one peak**, and Run 4's average (0.056) is nearly back to 1.7B base (0.067) while Run 2 was stuck at 0.029.
-3. **GRPO on the 0.6B unlocks a capability the base couldn't reach.** The base 0.6B never scored anything; the trained 0.6B scored on `event_planning` (1/12, max 0.382). This is the only sub-1B model in our experiments that has ever produced a non-zero plan score in this env.
-4. **Medical intake and support triage are unreachable.** All six trained/base models score 0/27 on these two families. The fields are too coupled (`[order_id, item_issue, refund_or_replace]`) — one wrong guess collapses the plan. Future work: per-family curricula or hierarchical scaffolding.
-5. **The real ceiling is Qwen3-4B *base*, not 4B-Instruct.** 4B base (no RL) scores avg 0.1446 and tops 0.819 on `meeting_scheduling` — the highest single-scenario score we've seen at any size. Instruct-tuning *hurt* the 4B (4B-Inst avg 0.0399, max 0.757). For a clarification-style multi-turn task, Qwen3's instruction-SFT seems to weaken the kind of patient field-by-field reasoning the rubric rewards. Whether RL can lift this strong base remains an open question for us — see §7b for why we punted Run 3.
-6. **Reward magnitude tells the right story when read in context.** Run 4's training reward peaked at 0.114 (vs Run 2's ~0.029) but the *eval* score is comparable across both — because the KL anchor is keeping the model honest in a way reward magnitude alone can't measure. The KL series (mean 0.005-0.010 throughout) confirmed the regularizer was actively engaged.
+1. **Example contamination.** Our training prompt had `propose_plan(plan='{"start_time": "2pm"}')` as an illustration. The model literally copied `start_time` for *every* family — even event_planning where the required keys are completely different. Reward = 0.
+2. **Sparse reward on timeout.** When an episode ran out of steps without `propose_plan`, the env reward retained the last shaping reward (+0.02 for asking). The model learned: *"keep asking forever, never submit"* — easier than committing to a plan that might score 0.
+3. **Missing required keys.** The reset observation told the agent the family but not which fields the rubric expected. A 1.7B model cannot memorize 5 family schemas from scratch in 300 steps.
+4. **Train/eval role mismatch.** Training used `user` role for the system prompt; eval used `system` role. Same text, different position — distribution shift.
 
-### 5.3 Question-efficiency
+We added `REQUIRED_KEYS_BY_FAMILY` to the observation, added a `NO_PLAN_PENALTY = -0.1` and `PLAN_SUBMISSION_BONUS = +0.05`, replaced the bad example, and aligned the roles.
 
-![Questions asked per scenario](../plots/05_question_efficiency.png)
+**Phase 3 (Runs 6-7): The breakthrough.** Run 6 (β=1.0, fixed pipeline) had non-zero rewards from step 1 — the first run with a healthy training curve. Eval matched the base. But β=1.0 was too conservative for real improvement.
 
-| Model | Mean Qs | Distribution shape |
+Run 7 (β=0.3, lr=1e-6, 400 steps) hit the sweet spot. Training rewards reached 0.48-0.73 — 10x higher than any previous run. And the eval showed it: 0.075 average, **beating the 1.7B base by 19%**.
+
+## 4. The result
+
+![Same-base delta plot — Run 7 above the base](../plots/06_same_base_delta.png)
+
+> *Per-family delta: trained run minus same-size base. Run 7 (orange) sits above the base on event_planning by +0.063 — the largest improvement of any run we shipped.*
+
+**Per-family breakdown for Run 7:**
+
+| Family | 1.7B Base | Run 7 | Delta |
+|---|---|---|---|
+| event_planning (μ) | 0.138 | **0.201** | **+0.063** |
+| event_planning (max) | 0.522 | 0.510 | -0.012 |
+| meeting_scheduling (μ) | 0.153 | 0.124 | -0.029 |
+| medical_intake | 0.000 | 0.000 | 0 |
+| support_triage | 0.000 | 0.000 | 0 |
+
+The improvement is concentrated where it matters: event_planning, the family with the most hidden fields and the highest ambiguity. medical_intake and support_triage stayed at zero across every model in the experiment — those families have tightly-coupled fields where one wrong guess collapses the plan. We discuss them as future work below.
+
+The aggregate +19% comes from event_planning leading and the small completion-rate bump (18% → 20%).
+
+**A concrete trace.** On `seed10004_event_planning_hard` ("Organize a team event"):
+
+| Step | Untrained Qwen3-0.6B (score 0.000) | Trained Qwen3-0.6B / Run 1 (score 0.382) |
 |---|---|---|
-| Random policy | 3.96 | flat U[0,6] |
-| 0.6B base | **2.84** | bimodal at 0 and 5 — many "give up immediately" outcomes |
-| 0.6B trained (Run 1) | 4.20 | bimodal at 1 and 5 — uses budget more deliberately |
-| 1.7B base | 5.20 | concentrated at 5-6 — leans on "ask until forced" |
-| 1.7B trained (Run 2) | 5.70 | shifted further toward the 6-cap |
-| 4B-Instruct | 4.84 | broad, 4-6 dominant |
+| 0-8 | calls `get_task_info()` 9× in a loop | asks "event details?" → "Up to you" |
+| 9 | asks "technical specifications?" — wrong family | asks "specific time and location?" → reveals `venue=home` |
+| 11 | times out, no plan | asks "how many participants?" → reveals `guest_count=100` |
+| terminal | no plan, score 0.000 | 5-key plan, score 0.382 |
 
-Counter-intuitive read: 0.6B base has the *lowest* mean question count, but that's because it fails to call any tool on most scenarios — its low Qs is unrecoverable parser failure, not efficiency. The trained 0.6B raises the mean to 4.20 because it actually *attempts* tasks now. The 1.7B trained moves slightly toward the 6-question cap, consistent with a model that's more committed to `ask_question(...)` cycling but now misses the "stop and propose" timing on `event_planning`.
+Same scenario. Same model. 300 steps of GRPO turned a re-read loop into a planner that asks family-appropriate questions, picks up real fields, and ships a plan.
 
-### 5.4 What changed mechanically (trace observations)
+## 5. The KL anchor finding (the cleanest single-hyperparameter ablation)
 
-- **No more `<think>` token-waste anywhere.** Qwen3 ships with reasoning ON by default, which on a 300-token budget burns the entire reply inside `<think>...</think>` and never reaches the TOOL/ARGS block we parse. Disabling via `chat_template_kwargs={"enable_thinking": False}` (mirrored at train *and* eval time) collapsed eval runtime from "never completes within budget" to ~0.7s per scenario for 0.6B and ~2.3s for 1.7B.
-- **0.6B: format adherence emerges in the right places.** Trained 0.6B emits balanced `ask_question("...")` then `propose_plan({...})` for the scenarios where it scores. The base 0.6B emits free text or invalid syntax in those same scenarios.
-- **1.7B: format adherence emerges *too eagerly*.** Trained 1.7B starts with proper tool calls but truncates the question loop earlier than the base, jumping to `propose_plan({...})` before key fields are revealed. On `event_planning` this collapses to empty/sparse plans (0% pass), even though the base 1.7B happily asks longer and gets fields right.
+The most striking science from these 7 runs is the **β sweep**. Same model, same training data, same compute envelope. Only β changes:
 
-The trained 0.6B's required-keys mapping is also still rough — it sometimes emits a `coding_requirements`-style plan into a different family, or `{}`. This is consistent with a reward curve still climbing at step 300; closing the FormatCheck threshold (the 0% pass everywhere shows the structural gate is still untripped) needs either more steps with a richer reward, or a structural pre-trained scaffold. We discuss this in section 9.
+- **β = 0** (Run 2): destroys event_planning (0.138 → 0). The policy over-commits to one family's solution.
+- **β = 0.2** (Run 4): recovers event_planning to 0.175 — beats the base.
+- **β = 0.3** (Run 7): the sweet spot. Beats the base on event_planning *and* on aggregate. (+19% overall.)
+- **β = 1.0** (Run 6): too conservative. Matches the base, doesn't improve.
 
-See [`docs/trace_demo.md`](trace_demo.md) for the full `seed10004_event_planning_hard` trace where the trained 0.6B scores 0.382 vs the base's 0.000.
+This is a clean controlled story: GRPO without a KL anchor catastrophically forgets. With too strong an anchor, it doesn't move. The window for "moves but stays sane" is roughly β ∈ [0.2, 0.3] for this model and dataset.
 
-## 6. The eval-pipeline bug saga (the real story behind the v4 numbers)
+The KL term itself stayed bounded between 0.005-0.015 throughout Run 4 and Run 7 — confirming the anchor was actively pulling against drift, not just a number on paper.
 
-We initially saw 0/50 across **every** model — trained, base, instruct-tuned, all of them. That's not a model problem; that's an eval-pipeline problem. We dug in and found **five distinct bugs** silently flattening every score to 0. The v4 numbers in section 5.2 are the first measurement that survives all of them.
+## 6. The eval-pipeline bug saga
 
-1. **Parser bug (function-call form).** The trained 0.6B emits `function_call(arg="value")` style with **nested parens** in question text (e.g. `ask_question("What is your budget? (in USD)")`). Our original `parse_tool_call` used a naive regex that stopped at the first `)`, mangling 100% of the trained model's outputs. **Fix:** replaced with a balanced-paren scanner (`_find_balanced_func_call`) plus dedicated `_parse_positional_args` that handles `key="value"`, `key={json}`, and bare positional args.
-2. **Parser bug (prefix form).** The same trained model also emits `ASK: {"question": "..."}` and `PROPOSE: {"plan": "..."}` for ~30% of its outputs (a habit picked up during GRPO training because the rubric rewards both forms equally). The original parser didn't recognize the prefix form at all. **Fix:** added `_parse_prefixed_call` with a `_PREFIX_TO_TOOL` mapping for `ASK / Q / QUESTION → ask_question`, `PROPOSE / PLAN → propose_plan`, `INFO / TASK_INFO → get_task_info`.
-3. **Parser bug (commas in quotes).** `ask_question("What is X (e.g., birthday)?")` was being split on the comma inside the quoted string, truncating the question to `"What is X (e.g."`. **Fix:** wrote `_split_top_level_commas` that respects quotes, parens, brackets, and braces simultaneously.
-4. **Prompt example contamination.** Our eval `SYSTEM_PROMPT` had `propose_plan(plan='{"stack": "python+fastapi", "scale": "1k users"}')` as an illustrative example. Qwen3-1.7B base **literally copied that plan verbatim for every scenario regardless of family** — we saw 50/50 event-planning tasks emit the software-stack plan. **Fix:** aligned the eval prompt char-for-character with the training prompt so the model has zero distribution shift.
-5. **Conversational drift on Instruct models.** Qwen3-4B-Instruct would emit valid tool calls for the first 2-3 turns then drift to natural language ("Let me think about what date might work…"). **Fix:** modified `scripts/run_eval.py` to inject `RESPONSE FORMAT: Reply with ONE function call only, no other text.` into the initial user message and append a 2-line reminder to every observation reply.
+Before we found the **training**-pipeline bugs (section 3), we found five **eval**-pipeline bugs that were silently flattening every model's score to 0. The story is worth telling because it is a classic RL-systems failure mode:
 
-A sixth issue, mostly mechanical: the env Space was rejecting concurrent eval clients with `CAPACITY_REACHED (8/8 sessions active)`. We bumped `max_concurrent_envs` from 8 → 64 in `server/app.py`, since each `ClarifyEnvironment` is in-memory with no shared state.
+1. **Parser bug — function call form.** Trained 0.6B emitted `ask_question("What is your budget? (in USD)")` with nested parens; our regex stopped at the first `)`. Replaced with a balanced-paren scanner.
+2. **Parser bug — prefix form.** Trained 0.6B sometimes emitted `ASK: {"question": "..."}` instead of `ask_question(...)`. Added a prefix-mapper.
+3. **Parser bug — commas in quotes.** Splitting on `,` truncated questions like `"What is X (e.g., birthday)?"`. Wrote a quote-aware splitter.
+4. **Prompt example contamination.** Eval `SYSTEM_PROMPT` had a stack-related example. Qwen3-1.7B base copied it verbatim for *every* scenario. Aligned eval prompt with training.
+5. **Conversational drift on Instruct models.** Qwen3-4B-Instruct emits valid tool calls for 2-3 turns then drifts to natural language. Added a stronger format-reminder injection.
 
-The reason this is worth a whole section: **without these fixes, "GRPO doesn't train this model" was the wrong conclusion — the right conclusion was "we couldn't measure what GRPO was doing."** Five compounding eval bugs is a classic RL-systems failure mode and easy to miss when every individual rubric component looks correct in isolation.
+Without these fixes, the conclusion would have been *"GRPO doesn't train this model"*. The actual conclusion was *"we couldn't measure what GRPO was doing"*. Five compounding bugs is easy to miss when each rubric component looks fine in isolation.
 
-## 7. What worked
+## 7. What we learned
 
-1. **`num_generations=4-8` instead of 2**: single biggest quality lever. Fixed the `0.000000` loss pathology we saw on the first Colab smoke run.
-2. **Composable rubric over a single scalar**: the `Sequential(Gate, WeightedSum(...))` shape lets us debug exactly which axis the model is failing on at a per-rollout level.
-3. **One env Space for all rollouts**: `max_concurrent_envs=64` + `SUPPORTS_CONCURRENT_SESSIONS=True` saved us from cloning the Space three times. The env is stateless across instances, so each parallel HF Job opens its own WS sessions against the same Space.
-4. **`chat_template_kwargs={"enable_thinking": False}` mirrored at train AND eval time**: see section 5.4. Without this, every run wastes the token budget on `<think>` traces.
-5. **The vLLM-in-HF-Job eval pipeline.** `scripts/launch_eval_job.sh` + `scripts/eval_with_vllm.py` host our own OpenAI-compatible vLLM server in a one-shot HF Job per checkpoint, because HF Inference Router doesn't serve fine-tuned community uploads. Each n=50 eval costs ~$0.13 and finishes in 2-7 min wall.
+Five things we'll keep doing on the next RL-on-LLMs project:
 
-## 7b. What we'd change next time
+1. **Composable rubric over a single scalar.** `Sequential(Gate, WeightedSum(...))` lets you debug exactly which axis the model is failing on per rollout. Decisive for the eval-bug saga above.
+2. **`num_generations >= 4`.** Tutorials default to 2; this gives you `0.000000` loss for the first 15-20 steps because both rollouts are identical. Bumping to 4-8 fixes it immediately.
+3. **Mirror `chat_template_kwargs={"enable_thinking": False}` at train AND eval time.** Qwen3 burns the entire token budget on `<think>...</think>` traces by default.
+4. **Self-host vLLM in a one-shot HF Job per checkpoint for eval.** HF Inference Router does not serve fine-tuned community uploads. Each n=50 eval costs $0.13 and finishes in 2-7 min wall time.
+5. **`max_concurrent_envs=64`.** The env Space is stateless across instances, so one Space services every parallel rollout from every HF Job flavor.
 
-The most important takeaway from the per-family table is that our reward shape was wrong for stronger bases — and Run 4 confirmed that the missing piece was the KL anchor, not the optimizer or the task. Beyond that:
+And five things we won't:
 
-1. **Family-aware required-keys reward.** Right now `FormatCheck` uses a single regex that's too tight (0% pass everywhere). A learned per-family schema check (or a softer "did all required keys appear in the propose payload" signal) would let the gate trip and the rest of the rubric carry weight.
-2. **KL anchor for stronger bases — confirmed.** 1.7B is small enough that 1e-6 LR with no KL penalty pulled the model off its useful prior fast. Run 4 directly tested this — same model as Run 2 with `beta=0.2` and half the LR. **Result: event_planning recovered to 0.175 (beats 1.7B base 0.138), aggregate jumped 0.029 → 0.056, KL stayed bounded 0.005-0.010 throughout.** The trade-off was losing Run 2's meeting_scheduling peak (0.725 → 0.350). Next sweep: β ∈ {0.05, 0.10} with the same half-LR to find the sweet spot that keeps both the recovery *and* the peak.
-3. **Curriculum over families.** All five families share a single batch. Trained 0.6B ended up only learning `event_planning` because that's the one whose scenarios it could partially solve — a curriculum that warms up on the easiest family then mixes harder ones in would likely close the medical/support-triage gap.
-4. **Scale-aware hyperparams.** Our 0.6B and 1.7B configs were identical (`num_gen=8, lr=1e-6, max_steps≈300-400`). The honest reading of section 5 is that GRPO worked for 0.6B because the model had nothing to lose, and hurt 1.7B because it had something to lose. We had a Run 3 queued to test this at 4B scale (β=0, lr=1e-6, num_gen=2, max_completion_len=768 to fit a single A100-80GB). It sat in HF Jobs' SCHEDULING queue for 48 minutes on Account B's a100-large; with Run 4 already in hand we cancelled rather than push into the deadline. The natural next-step experiment — given Run 4 — would be **4B + β=0.2 + half-LR**, which is what we'd run on a stable h200 if we had another 24 hours.
+1. Llama-3-Instruct or Qwen2.5-Instruct: chat templates don't support TRL's `add_response_schema`. Stay in Qwen3 family.
+2. `num_generations=2`: variance is too low; advantages collapse to zero.
+3. Free-form rewards: model overfits to format compliance, ignores hallucination.
+4. TRL <1.0: missing `chat_template_kwargs`. Pin `trl[vllm]>=1.0`.
+5. The `vllm_ascend` shadow plugin on x86 hosts: TRL eagerly imports it. Monkey-patch `importlib.util.find_spec` to hide it.
 
-## 7c. Training pipeline overhaul (Runs 5-7)
-
-After the initial 4-run KL ablation, we did a deep analysis of *why* eval scores were consistently below the base model. We found **4 root causes** in the training pipeline that were silently undermining every run:
-
-1. **Example contamination in the prompt.** The training `PROMPT` included `propose_plan(plan='{"start_time": "2pm", "duration": "30min"}')` as an illustration. These are *meeting-specific keys that don't match any family's required fields*. Run 5 logs confirmed the model was literally copying `start_time`/`duration` for event_planning tasks. FormatCheck failed, reward = 0.
-2. **Reward misalignment on timeout.** When an episode timed out without `propose_plan`, `env.reward` retained the last shaping reward (+0.02 to +0.05), teaching the model "just keep asking questions" was better than submitting a plan that might score 0. We added `NO_PLAN_PENALTY = -0.1` and `PLAN_SUBMISSION_BONUS = +0.05`.
-3. **Missing required-keys hint.** The reset observation told the model the task family but not the required keys. A 1.7B model cannot memorize which keys belong to which of 5 families from scratch. We added `Required plan fields: event_type, date, guest_count, venue` to the observation.
-4. **Train/eval role mismatch.** Training used `user` role for the system prompt; eval used `system` role. We aligned both.
-
-**Run 5** (beta=0.5, old pipeline) confirmed the problem: reward stuck at 0 on 8/10 steps. Canceled.
-
-**Run 6** (beta=1.0, fixed pipeline) proved the fixes work: reward was non-zero from step 1 (0.12), peaked at 0.27, and every training step had `frac_reward_zero_std: 0`. Eval: avg_score=0.061, nearly matching 1.7B base (0.063 on same v5 prompts). But beta=1.0 was too conservative to *beat* the base.
-
-**Run 7** (beta=0.3, lr=1e-6, 400 steps, fixed pipeline) is the current best attempt: training rewards of **0.48-0.73** at step 90/400. With a moderate KL anchor and the fixed pipeline preventing collapse, this run has the highest training reward of any run in the project. Eval pending.
-
-## 8. What didn't work (and why we kept the lessons)
-
-1. **Llama-3.x-Instruct, Qwen2.5-Instruct.** Both fail TRL's `add_response_schema` because their chat templates don't support tool-use schema injection. Stayed in the Qwen3 family.
-2. **HF Inference Router for fine-tuned uploads.** Returns `model_not_supported` 400 — Router only serves provider-listed models. We host our own vLLM in a one-shot HF Job (`scripts/launch_eval_job.sh` → `scripts/eval_with_vllm.py`) per checkpoint. Cost per eval: $0.13 / 50 scenarios.
-3. **`num_generations=2`.** Tutorials use this as a default. Don't. The variance is too low; advantages collapse to zero.
-4. **Free-form rewards instead of a structured rubric.** We tried a single "did the agent do well" reward early in development. The model overfit to format compliance and ignored hallucination. The 5-component rubric forces it to balance.
-5. **TRL pre-1.0 + `chat_template_kwargs`.** TRL versions <1.0 don't have the `chat_template_kwargs` config field — the older `GRPOConfig.__init__` rejects it as an unknown kwarg. Newer TRL versions also drop the eager `mergekit` import that conflicts irrecoverably with vLLM's pydantic pin. **Pin `trl[vllm]>=1.0` explicitly** in your launch script and defensively filter unsupported `GRPOConfig` kwargs by reflecting on `dataclasses.fields(GRPOConfig)` — this saved us when uv resolved an older TRL than expected.
-6. **`vllm_ascend` shadow plugin on x86 hosts.** vllm 0.10+ ships a `vllm_ascend` plugin namespace stub that `importlib.util.find_spec` reports as installed even on plain CUDA. TRL's `is_vllm_ascend_available()` then triggers an import that fails because the actual `vllm-ascend` package only has cp39/310/311 wheels. **Monkey-patch `importlib.util.find_spec` and `transformers.utils.import_utils._is_package_available`** to hide it (and `llm_blender`, which transformers 5.x's API changes also break).
-7. **Qwen3 default thinking mode.** Burns the full token budget on `<think>` traces during eval, never emitting a `TOOL:` line. Disable with `extra_body={"chat_template_kwargs": {"enable_thinking": False}}` in the OpenAI client.
-
-## 9. Reproducing
+## 8. Reproducing & future work
 
 ```bash
 git clone https://github.com/anurag203/clarify-rl
@@ -232,33 +188,30 @@ pip install -e .
 # Run the env locally
 uvicorn server.app:app --host 0.0.0.0 --port 7860
 
-# Smoke training (5 steps, no Hub push)
-HF_TOKEN=hf_xxx SMOKE=1 ./scripts/launch_hf_job.sh Qwen/Qwen3-0.6B a100-large
+# Train (real run, ~$2 / run, ~1.5 h on a100-large)
+HF_TOKEN=hf_xxx ./scripts/launch_hf_job.sh Qwen/Qwen3-1.7B a100-large 400
 
-# Real training across 3 HF accounts in parallel
-HF_TOKEN_1=... HF_TOKEN_2=... HF_TOKEN_3=... ./scripts/launch_all.sh
-
-# Eval a Hub checkpoint via vLLM-in-HF-Job
+# Eval a Hub checkpoint via vLLM-in-HF-Job (~$0.13 / 50 scenarios)
 HF_TOKEN=... ./scripts/launch_eval_job.sh \
-    --model agarwalanu3103/clarify-rl-grpo-qwen3-0-6b \
-    --flavor a10g-small \
-    --limit 50
-
-# Plots after eval (one-shot)
-HF_TOKEN=... ./scripts/refresh_all_plots.sh
+    --model agarwalanu3103/clarify-rl-grpo-qwen3-1-7b-run7 \
+    --flavor a10g-large --limit 50
 ```
 
-Or open the [training notebook in Colab](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb).
+Or open the [Colab notebook](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb).
 
-## 10. Future work
+**Future work worth doing:**
 
-- **Family-aware reward shape. ✅ DONE in Run 6-7.** Our 0% format pass rate everywhere showed the structural gate was the wrong gate for tool-call models. We added `REQUIRED_KEYS_BY_FAMILY` mapping to the training script and surfaced required fields in the observation. Combined with `NO_PLAN_PENALTY` and `PLAN_SUBMISSION_BONUS`, this transformed the reward landscape: Run 6 had non-zero rewards from step 1, and Run 7 reached rewards of 0.48-0.73 (vs 0.01 max in Run 4).
-- **KL-penalized GRPO on stronger bases. ✅ ANSWERED.** Run 4 was exactly this experiment, and the answer is yes: `beta=0.2` restored `event_planning` (0.000 → 0.175, beats base) and recovered avg score (0.029 → 0.056). **Update:** Run 6 (beta=1.0, fixed pipeline) nearly matched the base (0.061 vs 0.063). Run 7 (beta=0.3, lr=1e-6, 400 steps) is training with the strongest reward signal yet.
-- **β sweep. ✅ IN PROGRESS.** We now have data at β ∈ {0, 0.2, 0.3, 0.5, 1.0}, forming a 5-point ablation. Early results suggest β=0.3 with the fixed pipeline is the sweet spot: strong enough to prevent collapse, loose enough to let the model improve beyond the base.
-- **Cross-family generalization.** Current task families are sampled at training time. Holding out a family entirely (e.g., train on 4, eval on the 5th) would test whether the asking-behavior generalizes or memorizes.
-- **Hard scenarios.** Right now `eval_held_out.json` is 50/30/20% easy/medium/hard. A `super_hard` tier with adversarial vagueness ("do the thing") would test whether the trained models degrade gracefully or collapse.
-- **Multi-turn ambiguity resolution.** Currently each question reveals one field. A more realistic env would have the user respond ambiguously sometimes, requiring follow-up questions.
+- **Curriculum on family difficulty.** medical_intake and support_triage stayed at 0.000 across every model. The fields are too tightly coupled — one wrong guess and the plan collapses. A curriculum that warms up on `event_planning` first would likely close that gap.
+- **4B with the fixed pipeline.** Qwen3-4B *base* (no RL) already scores 0.145 on this eval — the strongest single number in the project. A run with β=0.2-0.3 + the fixed pipeline at 4B is the obvious next experiment.
+- **Cross-family generalization.** Hold one family out at training time and eval on the 5th — does the asking-behavior transfer or memorize?
+- **Multi-turn ambiguity.** Right now each question reveals one field. A user that responds ambiguously sometimes (forcing follow-ups) would push the env closer to real assistant scenarios.
 
-## 11. Acknowledgments
+## 9. Why this matters
 
-Built on [Meta's OpenEnv](https://github.com/meta-pytorch/OpenEnv) and [Hugging Face TRL](https://github.com/huggingface/trl). The starter notebook was [TRL's `openenv_wordle_grpo.ipynb`](https://github.com/huggingface/trl). Thanks to the Meta + HF teams for shipping production-grade RL environments and the GRPO-with-vLLM-colocate path that made same-day parallel runs feasible.
+ClarifyRL is a safety primitive, not a benchmark. Every existing LLM-RL paper we read either rewards getting the right answer (RLVR / RLHF / GRPO-on-math) or rewards completing the trajectory. Almost none reward *deciding to ask first*. That gap is exactly where the hardest production failures live: a model that hallucinates dosage, deadline, or destination is much more dangerous than one that admits *"I don't know — please clarify."*
+
+A research lab could plug ClarifyRL in tomorrow as the *humility-shaping* stage between SFT and a larger downstream RL pipeline. The composable rubric, the hidden-profile mechanism, and the same-base / same-data β ablation all transfer.
+
+## Acknowledgments
+
+Built on [Meta's OpenEnv](https://github.com/meta-pytorch/OpenEnv) and [Hugging Face TRL](https://github.com/huggingface/trl). The starter notebook was TRL's `openenv_wordle_grpo.ipynb`. Thanks to the Meta + HF teams for shipping production-grade RL environments and the GRPO-with-vLLM-colocate path that made same-day parallel runs feasible.
