@@ -23,9 +23,9 @@ Meta OpenEnv Hackathon Grand Finale · Bangalore · April 25-26, 2026
 
 ## Slide 2 · The problem
 
-> A user types **"Plan a birthday party"** into your assistant.
+> A user types **"Set up a sync with the team this week"** into your assistant.
 
-A naïve LLM happily invents a date, a guest list, a venue, and a budget. Every fabricated field is a **hallucination** — and a real-world failure mode for agents that have to take action.
+It cheerfully replies: *"Done — Thursday at 3pm, 60 minutes, on Zoom with Engineering, Marketing, and Sales."* Three things the model just made up: the **time** (you said *"this week"*), the **duration** (never specified), and the **invitees** (you said *"the team,"* not three departments). Polished. Confident. Completely fabricated. This is a real-world failure mode for agents that have to take action.
 
 The right behaviour: **ask the right clarifying questions first, then act.**
 

@@ -276,8 +276,8 @@ def _story_flow_html() -> str:
                 onmouseover="{onhover}='0 0 24px rgba(255,68,68,0.18)';"
                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                 <div style="font-family:'Orbitron',monospace; color:#ff4444; font-size:0.72em; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;">1 &middot; The Problem</div>
-                <div style="font-size:1.15em; color:#fff; font-weight:600; margin-bottom:6px;">LLMs hallucinate on vague tasks.</div>
-                <div style="font-size:0.88em; color:#aaa; line-height:1.5;">No RL paper rewards <em style="color:#ff7777;">deciding to ask first</em> &mdash; they all reward arriving at the right answer.</div>
+                <div style="font-size:1.15em; color:#fff; font-weight:600; margin-bottom:6px;">LLMs invent details you never gave them.</div>
+                <div style="font-size:0.85em; color:#aaa; line-height:1.5;">Ask *"sync with the team this week"* &rarr; get *"Thursday 3pm, 60 min, with 3 departments"*. Three fabrications. <em style="color:#ff7777;">No RL paper rewards deciding to ask first.</em></div>
             </div>
 
             <div style="display:flex; align-items:center; color:#00f0ff; font-size:1.8em; font-weight:300;">&rarr;</div>

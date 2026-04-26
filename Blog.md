@@ -2,11 +2,19 @@
 
 > *Every RLHF, RLVR, and GRPO-on-math paper rewards arriving at the right answer. Almost none reward deciding to ask first. We built the environment that does — and validated it works.*
 
-You text your assistant: *"Plan a birthday party."*
+You message your assistant: ***"Set up a sync with the team this week."***
 
-It comes back with a venue you never mentioned, a guest list it made up, and a budget pulled from thin air. Everything looks polished. Everything is wrong.
+It cheerfully replies: ***"Done — Thursday at 3pm, 60 minutes, on Zoom with Engineering, Marketing, and Sales."***
 
-This is the default mode of every LLM today. They are trained to sound confident, not to say *"wait — how many people are coming?"*
+The model just invented three things you never said:
+
+- the **time** (you said *"this week,"* not Thursday at 3pm)
+- the **duration** (you never picked 60 minutes)
+- the **invitees** (you said *"the team,"* not three departments)
+
+Polished. Confident. Completely fabricated.
+
+This is the default mode of every LLM today. They are trained to sound confident, not to say *"wait — which team? what day works?"*
 
 We thought: what if we could put that reflex — the pause, the question — directly into the reward signal? What if asking the right thing first was the only way to score?
 
