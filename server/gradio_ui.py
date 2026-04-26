@@ -1,9 +1,8 @@
 """Rich Gradio Blocks UI for the ClarifyRL HF Space.
 
-Replaces the bare-bones auto-generated OpenEnv Gradio with a 4-tab
-dashboard that judges can explore without leaving the Space URL.
-
-Dark neon theme with glowing accents for visual impact.
+Dark neon cyberpunk theme. CSS injected via gr.HTML("<style>") to work
+with Gradio 6.x where css= param on gr.Blocks is ignored when using
+mount_gradio_app().
 """
 
 from __future__ import annotations
@@ -17,301 +16,177 @@ import gradio as gr
 
 _ROOT = Path(__file__).resolve().parent.parent
 _PLOTS = _ROOT / "plots"
-_SCENARIOS = _ROOT / "scenarios" / "eval_held_out.json"
 
 # ---------------------------------------------------------------------------
-# Neon dark CSS
+# CSS — injected via gr.HTML so it works with mount_gradio_app + Gradio 6.x
 # ---------------------------------------------------------------------------
-_NEON_CSS = """
+_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-:root {
-    --neon-cyan: #00f0ff;
-    --neon-magenta: #ff00e5;
-    --neon-green: #39ff14;
-    --neon-yellow: #fffc00;
-    --neon-orange: #ff6b00;
-    --bg-dark: #0a0a1a;
-    --bg-card: #111128;
-    --bg-card-hover: #1a1a3e;
-    --border-glow: #1e1e4a;
-    --text-primary: #e0e0ff;
-    --text-muted: #8888bb;
+/* ── Force dark background everywhere ─────────────────────── */
+html, body, main,
+.gradio-container, .gradio-container.gradio-container-6-13-0,
+div[class*="gradio"], .contain, .app,
+[data-testid="blocks-container"] {
+    background: #0a0a1a !important;
+    color: #e0e0ff !important;
 }
 
-/* ── Global ────────────────────────────────────────────────── */
-.gradio-container {
-    background: var(--bg-dark) !important;
-    font-family: 'Inter', sans-serif !important;
-    max-width: 1200px !important;
-}
-
-.dark .gradio-container, .gradio-container {
-    background: var(--bg-dark) !important;
-}
-
-footer { display: none !important; }
-
-/* ── Neon header bar ──────────────────────────────────────── */
-.neon-header {
-    text-align: center;
-    padding: 30px 20px 20px;
-    margin-bottom: 10px;
-    background: linear-gradient(135deg, #0a0a2e 0%, #1a0a3e 50%, #0a0a2e 100%);
-    border-bottom: 2px solid var(--neon-cyan);
-    box-shadow: 0 4px 30px rgba(0, 240, 255, 0.15);
-    border-radius: 12px;
-}
-.neon-header h1 {
-    font-family: 'Orbitron', sans-serif !important;
-    font-size: 2.4em !important;
-    font-weight: 900 !important;
-    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta), var(--neon-cyan));
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: neonShift 4s ease infinite;
-    text-shadow: none;
-    margin: 0 0 8px 0;
-    letter-spacing: 2px;
-}
-.neon-header p {
-    color: var(--text-muted) !important;
-    font-size: 1em;
-    margin: 4px 0;
-}
-.neon-header a {
-    color: var(--neon-cyan) !important;
-    text-decoration: none;
-    font-weight: 600;
-    border-bottom: 1px solid rgba(0,240,255,0.3);
-    transition: all 0.3s ease;
-}
-.neon-header a:hover {
-    color: var(--neon-magenta) !important;
-    border-bottom-color: var(--neon-magenta);
-    text-shadow: 0 0 8px rgba(255,0,229,0.5);
-}
-
-@keyframes neonShift {
-    0%, 100% { background-position: 0% center; }
-    50% { background-position: 200% center; }
-}
+footer, .footer { display: none !important; }
 
 /* ── Tabs ─────────────────────────────────────────────────── */
-.tabs > .tab-nav {
-    background: var(--bg-card) !important;
+[role="tablist"] {
+    background: #111128 !important;
     border-radius: 12px 12px 0 0 !important;
-    border-bottom: 2px solid var(--border-glow) !important;
+    border-bottom: 2px solid #1e1e4a !important;
     padding: 4px !important;
 }
-.tabs > .tab-nav > button {
-    color: var(--text-muted) !important;
-    font-family: 'Orbitron', sans-serif !important;
-    font-size: 0.85em !important;
+[role="tab"] {
+    color: #8888bb !important;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 0.82em !important;
     font-weight: 700 !important;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
     background: transparent !important;
     border: 1px solid transparent !important;
     border-radius: 8px !important;
-    padding: 10px 20px !important;
-    margin: 2px !important;
+    padding: 10px 18px !important;
     transition: all 0.3s ease;
 }
-.tabs > .tab-nav > button:hover {
-    color: var(--neon-cyan) !important;
-    background: rgba(0, 240, 255, 0.08) !important;
-    border-color: rgba(0, 240, 255, 0.3) !important;
+[role="tab"]:hover {
+    color: #00f0ff !important;
+    background: rgba(0,240,255,0.08) !important;
 }
-.tabs > .tab-nav > button.selected {
-    color: var(--neon-cyan) !important;
-    background: rgba(0, 240, 255, 0.12) !important;
-    border-color: var(--neon-cyan) !important;
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.05);
+[role="tab"][aria-selected="true"] {
+    color: #00f0ff !important;
+    background: rgba(0,240,255,0.12) !important;
+    border-color: #00f0ff !important;
+    box-shadow: 0 0 15px rgba(0,240,255,0.2), inset 0 0 15px rgba(0,240,255,0.05);
 }
-
-.tabitem {
-    background: var(--bg-dark) !important;
-    padding: 20px !important;
+[role="tabpanel"] {
+    background: #0a0a1a !important;
+    border: none !important;
 }
 
-/* ── Markdown inside tabs ─────────────────────────────────── */
-.prose, .markdown-text, .md, .gradio-markdown {
-    color: var(--text-primary) !important;
+/* ── Markdown text ────────────────────────────────────────── */
+.markdown-text, .prose, .md, [data-testid="markdown"],
+.markdown-text p, .prose p {
+    color: #e0e0ff !important;
 }
-.prose h1, .prose h2, .prose h3,
-.markdown-text h1, .markdown-text h2, .markdown-text h3 {
-    font-family: 'Orbitron', sans-serif !important;
-    color: var(--neon-cyan) !important;
-    text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+.markdown-text h1, .prose h1 { font-family: 'Orbitron', monospace !important; color: #00f0ff !important; text-shadow: 0 0 10px rgba(0,240,255,0.3); font-size: 1.7em !important; border-bottom: 1px solid #1e1e4a; padding-bottom: 8px; }
+.markdown-text h2, .prose h2 { font-family: 'Orbitron', monospace !important; color: #00f0ff !important; text-shadow: 0 0 8px rgba(0,240,255,0.25); font-size: 1.3em !important; }
+.markdown-text h3, .prose h3 { font-family: 'Orbitron', monospace !important; color: #39ff14 !important; text-shadow: 0 0 8px rgba(57,255,20,0.2); font-size: 1.1em !important; }
+.markdown-text strong, .prose strong { color: #fffc00 !important; }
+.markdown-text a, .prose a { color: #00f0ff !important; text-decoration: none; border-bottom: 1px solid rgba(0,240,255,0.3); transition: all 0.2s; }
+.markdown-text a:hover, .prose a:hover { color: #ff00e5 !important; border-color: #ff00e5; text-shadow: 0 0 8px rgba(255,0,229,0.4); }
+.markdown-text code, .prose code {
+    background: rgba(0,240,255,0.1) !important;
+    color: #00f0ff !important;
+    border: 1px solid rgba(0,240,255,0.2) !important;
+    border-radius: 4px; padding: 1px 6px;
+    font-family: 'JetBrains Mono', monospace !important; font-size: 0.88em;
 }
-.prose h1 { font-size: 1.8em !important; border-bottom: 1px solid var(--border-glow); padding-bottom: 8px; }
-.prose h2 { font-size: 1.4em !important; }
-.prose h3 { font-size: 1.15em !important; color: var(--neon-green) !important; text-shadow: 0 0 8px rgba(57,255,20,0.2); }
-.prose strong { color: var(--neon-yellow) !important; }
-.prose code {
-    background: rgba(0, 240, 255, 0.1) !important;
-    color: var(--neon-cyan) !important;
-    border: 1px solid rgba(0, 240, 255, 0.2) !important;
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.9em;
-}
-.prose pre {
+.markdown-text pre, .prose pre {
     background: #0d0d2b !important;
-    border: 1px solid var(--border-glow) !important;
+    border: 1px solid #1e1e4a !important;
     border-radius: 8px !important;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
 }
-.prose pre code {
-    background: transparent !important;
-    border: none !important;
-    color: var(--neon-green) !important;
+.markdown-text pre code, .prose pre code {
+    background: transparent !important; border: none !important;
+    color: #39ff14 !important;
 }
-.prose a { color: var(--neon-cyan) !important; transition: color 0.2s; }
-.prose a:hover { color: var(--neon-magenta) !important; text-shadow: 0 0 8px rgba(255,0,229,0.4); }
-.prose blockquote {
-    border-left: 3px solid var(--neon-magenta) !important;
-    background: rgba(255, 0, 229, 0.05) !important;
-    padding: 10px 16px !important;
-    border-radius: 0 8px 8px 0;
-    color: var(--text-muted) !important;
+.markdown-text blockquote, .prose blockquote {
+    border-left: 3px solid #ff00e5 !important;
+    background: rgba(255,0,229,0.05) !important;
+    padding: 10px 16px !important; border-radius: 0 8px 8px 0;
+    color: #8888bb !important;
 }
-.prose table { border-collapse: collapse; width: 100%; }
-.prose table th {
-    background: rgba(0, 240, 255, 0.1) !important;
-    color: var(--neon-cyan) !important;
-    font-family: 'Orbitron', sans-serif !important;
-    font-size: 0.8em;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 10px 12px !important;
-    border-bottom: 2px solid var(--neon-cyan) !important;
-}
-.prose table td {
-    padding: 8px 12px !important;
-    border-bottom: 1px solid var(--border-glow) !important;
-    color: var(--text-primary) !important;
-}
-.prose table tr:hover td {
-    background: rgba(0, 240, 255, 0.04) !important;
-}
-.prose hr {
-    border: none !important;
-    height: 1px !important;
-    background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-magenta), transparent) !important;
+.markdown-text hr, .prose hr {
+    border: none !important; height: 1px !important;
+    background: linear-gradient(90deg, transparent, #00f0ff, #ff00e5, transparent) !important;
     margin: 24px 0 !important;
 }
 
+/* ── Tables ───────────────────────────────────────────────── */
+.markdown-text table, .prose table { border-collapse: collapse; width: 100%; }
+.markdown-text th, .prose th {
+    background: rgba(0,240,255,0.1) !important; color: #00f0ff !important;
+    font-family: 'Orbitron', monospace !important; font-size: 0.78em;
+    text-transform: uppercase; letter-spacing: 1px;
+    padding: 10px 12px !important; border-bottom: 2px solid #00f0ff !important;
+}
+.markdown-text td, .prose td {
+    padding: 8px 12px !important; border-bottom: 1px solid #1e1e4a !important;
+    color: #e0e0ff !important;
+}
+.markdown-text tr:hover td, .prose tr:hover td { background: rgba(0,240,255,0.04) !important; }
+
 /* ── Images ───────────────────────────────────────────────── */
-.hero-img, .plot-img {
-    border: 1px solid var(--border-glow) !important;
-    border-radius: 12px !important;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.08);
+.image-container, [data-testid="image"] {
+    border: 1px solid #1e1e4a !important; border-radius: 12px !important;
+    overflow: hidden; background: #0a0a1a !important;
+    box-shadow: 0 0 20px rgba(0,240,255,0.08);
     transition: box-shadow 0.3s ease;
 }
-.hero-img:hover, .plot-img:hover {
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.18), 0 0 60px rgba(255, 0, 229, 0.08);
+.image-container:hover, [data-testid="image"]:hover {
+    box-shadow: 0 0 30px rgba(0,240,255,0.18), 0 0 60px rgba(255,0,229,0.08);
 }
-.hero-img img, .plot-img img {
-    max-height: 500px;
-    object-fit: contain;
+.image-container img, [data-testid="image"] img {
     border-radius: 12px;
 }
 
 /* ── Buttons ──────────────────────────────────────────────── */
-.primary.svelte-1ogfvm8, button.primary {
-    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta)) !important;
-    color: #fff !important;
-    font-family: 'Orbitron', sans-serif !important;
-    font-weight: 700 !important;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    border: none !important;
-    border-radius: 8px !important;
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3), 0 0 40px rgba(255, 0, 229, 0.15);
+button.primary, [data-testid="button"].primary,
+button[variant="primary"] {
+    background: linear-gradient(135deg, #00f0ff, #ff00e5) !important;
+    color: #fff !important; font-family: 'Orbitron', monospace !important;
+    font-weight: 700 !important; letter-spacing: 1px; text-transform: uppercase;
+    border: none !important; border-radius: 8px !important;
+    box-shadow: 0 0 20px rgba(0,240,255,0.3), 0 0 40px rgba(255,0,229,0.15);
     transition: all 0.3s ease;
 }
-.primary.svelte-1ogfvm8:hover, button.primary:hover {
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.5), 0 0 60px rgba(255, 0, 229, 0.3);
+button.primary:hover, [data-testid="button"].primary:hover {
+    box-shadow: 0 0 30px rgba(0,240,255,0.5), 0 0 60px rgba(255,0,229,0.3);
     transform: translateY(-1px);
 }
 
-/* ── Dropdown / inputs ────────────────────────────────────── */
-.wrap.svelte-1ogfvm8, .container > .wrap, select, input,
-.border-none, .dropdown-arrow {
-    background: var(--bg-card) !important;
-    color: var(--text-primary) !important;
-    border-color: var(--border-glow) !important;
-    border-radius: 8px !important;
+/* ── Inputs / dropdowns ───────────────────────────────────── */
+input, select, textarea, [data-testid="textbox"],
+.border-none, .dropdown-arrow, .wrap {
+    background: #111128 !important; color: #e0e0ff !important;
+    border-color: #1e1e4a !important; border-radius: 8px !important;
+}
+label, .label-text, [data-testid="label-text"] {
+    color: #8888bb !important;
 }
 
 /* ── Chatbot ──────────────────────────────────────────────── */
-.chatbot {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-glow) !important;
-    border-radius: 12px !important;
+[data-testid="chatbot"], .chatbot {
+    background: #111128 !important;
+    border: 1px solid #1e1e4a !important; border-radius: 12px !important;
 }
-.message.user { background: rgba(0, 240, 255, 0.08) !important; border-left: 3px solid var(--neon-cyan) !important; }
-.message.bot  { background: rgba(255, 0, 229, 0.05) !important; border-left: 3px solid var(--neon-magenta) !important; }
 
-/* ── Neon stat cards ──────────────────────────────────────── */
-.stat-row { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
-.stat-card {
-    flex: 1; min-width: 160px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-glow);
-    border-radius: 12px;
-    padding: 16px 20px;
-    text-align: center;
-    transition: all 0.3s ease;
+/* ── Neon pulse animation for live dot ────────────────────── */
+@keyframes neonPulse {
+    0%, 100% { box-shadow: 0 0 4px #39ff14; }
+    50% { box-shadow: 0 0 16px #39ff14, 0 0 30px rgba(57,255,20,0.3); }
 }
-.stat-card:hover {
-    border-color: var(--neon-cyan);
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
-    transform: translateY(-2px);
-}
-.stat-card .stat-value {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.8em;
-    font-weight: 900;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
-}
-.stat-card .stat-label {
-    font-size: 0.75em;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 4px;
-}
-.stat-card.magenta .stat-value { color: var(--neon-magenta); text-shadow: 0 0 10px rgba(255,0,229,0.4); }
-.stat-card.green .stat-value { color: var(--neon-green); text-shadow: 0 0 10px rgba(57,255,20,0.4); }
-.stat-card.yellow .stat-value { color: var(--neon-yellow); text-shadow: 0 0 10px rgba(255,252,0,0.4); }
-.stat-card.orange .stat-value { color: var(--neon-orange); text-shadow: 0 0 10px rgba(255,107,0,0.4); }
-
-/* ── Glow pulse on the title ──────────────────────────────── */
-.pulse-dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    background: var(--neon-green);
-    border-radius: 50%;
-    margin-right: 8px;
-    animation: pulse 2s ease infinite;
-    vertical-align: middle;
-}
-@keyframes pulse {
-    0%, 100% { box-shadow: 0 0 4px var(--neon-green); }
-    50% { box-shadow: 0 0 16px var(--neon-green), 0 0 30px rgba(57,255,20,0.3); }
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% center; }
+    50% { background-position: 200% center; }
 }
 """
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _plot_path(name: str) -> str | None:
+    p = _PLOTS / name
+    return str(p) if p.exists() else None
+
 
 def _load_summary_table() -> str:
     p = _PLOTS / "runs_summary.json"
@@ -324,18 +199,46 @@ def _load_summary_table() -> str:
         "|-------|-----------|------------|----------------|----------------|",
     ]
     for r in rows:
-        label = r["label"]
-        avg = f'{r["avg_score"]:.4f}'
-        comp = f'{r["completion_rate"]:.0%}'
-        ep = f'{r.get("fam_event_planning", 0):.3f}'
-        ms = f'{r.get("fam_meeting_scheduling", 0):.3f}'
-        lines.append(f"| {label} | {avg} | {comp} | {ep} | {ms} |")
+        lines.append(f"| {r['label']} | {r['avg_score']:.4f} | {r['completion_rate']:.0%} | {r.get('fam_event_planning',0):.3f} | {r.get('fam_meeting_scheduling',0):.3f} |")
     return "\n".join(lines)
 
 
-def _plot_path(name: str) -> str | None:
-    p = _PLOTS / name
-    return str(p) if p.exists() else None
+def _header_html() -> str:
+    return """
+    <div style="
+        text-align:center; padding:32px 20px 24px;
+        background: linear-gradient(135deg, #0a0a2e 0%, #1a0a3e 50%, #0a0a2e 100%);
+        border-bottom: 2px solid #00f0ff;
+        box-shadow: 0 4px 30px rgba(0,240,255,0.15);
+        border-radius: 12px; margin-bottom: 12px;
+    ">
+        <h1 style="
+            font-family: 'Orbitron', monospace; font-size: 2.6em; font-weight: 900;
+            background: linear-gradient(90deg, #00f0ff, #ff00e5, #00f0ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: gradientShift 4s ease infinite;
+            margin: 0 0 10px 0; letter-spacing: 3px;
+        ">CLARIFY RL</h1>
+        <p style="color:#c0c0ff; font-size:1.05em; margin:4px 0; font-family:'Inter',sans-serif;">
+            <span style="
+                display:inline-block; width:9px; height:9px; background:#39ff14;
+                border-radius:50%; margin-right:8px; vertical-align:middle;
+                animation: neonPulse 2s ease infinite;
+            "></span>
+            Train LLMs to <strong style="color:#fff;">ask clarifying questions</strong> instead of hallucinating
+        </p>
+        <p style="color:#8888bb; font-size:0.85em; margin-top:10px; font-family:'Inter',sans-serif;">
+            <a href="https://github.com/anurag203/clarify-rl" style="color:#00f0ff; text-decoration:none; font-weight:600;">GitHub</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md" style="color:#00f0ff; text-decoration:none; font-weight:600;">Blog</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb" style="color:#00f0ff; text-decoration:none; font-weight:600;">Colab</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://huggingface.co/spaces/anurag203/clarify-rl-demo" style="color:#00f0ff; text-decoration:none; font-weight:600;">Demo</a>
+        </p>
+    </div>
+    """
 
 
 def _stat_cards_html() -> str:
@@ -344,30 +247,41 @@ def _stat_cards_html() -> str:
         return ""
     data = json.loads(p.read_text())
     rows = data.get("rows", [])
-    best_trained = max(
-        (r for r in rows if "GRPO" in r.get("label", "")),
-        key=lambda r: r.get("avg_score", 0),
-        default=None,
-    )
-    base_1_7b = next((r for r in rows if r.get("label") == "1.7B base"), None)
+    best = max((r for r in rows if "GRPO" in r.get("label", "")), key=lambda r: r.get("avg_score", 0), default=None)
+    base = next((r for r in rows if r.get("label") == "1.7B base"), None)
     ceiling = next((r for r in rows if r.get("label") == "4B base"), None)
     n_runs = sum(1 for r in rows if "GRPO" in r.get("label", ""))
 
-    cards = []
-    if best_trained:
-        cards.append(f'<div class="stat-card"><div class="stat-value">{best_trained["avg_score"]:.3f}</div><div class="stat-label">Best Trained Score</div></div>')
-    if base_1_7b:
-        cards.append(f'<div class="stat-card magenta"><div class="stat-value">{base_1_7b["avg_score"]:.3f}</div><div class="stat-label">1.7B Base Score</div></div>')
-    if ceiling:
-        cards.append(f'<div class="stat-card green"><div class="stat-value">{ceiling["avg_score"]:.3f}</div><div class="stat-label">4B Ceiling</div></div>')
-    cards.append(f'<div class="stat-card yellow"><div class="stat-value">{n_runs}</div><div class="stat-label">GRPO Runs</div></div>')
-    cards.append(f'<div class="stat-card orange"><div class="stat-value">5</div><div class="stat-label">Task Families</div></div>')
+    def card(value, label, color, glow):
+        return f"""
+        <div style="
+            flex:1; min-width:140px; background:#111128;
+            border:1px solid #1e1e4a; border-radius:12px;
+            padding:18px 14px; text-align:center;
+            transition: all 0.3s ease; cursor:default;
+        " onmouseover="this.style.borderColor='{color}'; this.style.boxShadow='0 0 20px {glow}';"
+           onmouseout="this.style.borderColor='#1e1e4a'; this.style.boxShadow='none';">
+            <div style="font-family:'Orbitron',monospace; font-size:1.9em; font-weight:900;
+                color:{color}; text-shadow: 0 0 10px {glow};">{value}</div>
+            <div style="font-size:0.72em; color:#8888bb; text-transform:uppercase;
+                letter-spacing:1.5px; margin-top:5px; font-family:'Inter',sans-serif;">{label}</div>
+        </div>"""
 
-    return f'<div class="stat-row">{"".join(cards)}</div>'
+    cards = []
+    if best:
+        cards.append(card(f"{best['avg_score']:.3f}", "Best Trained", "#00f0ff", "rgba(0,240,255,0.4)"))
+    if base:
+        cards.append(card(f"{base['avg_score']:.3f}", "1.7B Base", "#ff00e5", "rgba(255,0,229,0.4)"))
+    if ceiling:
+        cards.append(card(f"{ceiling['avg_score']:.3f}", "4B Ceiling", "#39ff14", "rgba(57,255,20,0.4)"))
+    cards.append(card(str(n_runs), "GRPO Runs", "#fffc00", "rgba(255,252,0,0.4)"))
+    cards.append(card("5", "Task Families", "#ff6b00", "rgba(255,107,0,0.4)"))
+
+    return f'<div style="display:flex; gap:14px; margin:14px 0; flex-wrap:wrap;">{"".join(cards)}</div>'
 
 
 # ---------------------------------------------------------------------------
-# Tab content: Markdown
+# Tab content
 # ---------------------------------------------------------------------------
 
 _OVERVIEW_MD = """
@@ -391,8 +305,7 @@ admit uncertainty, ask the *right* question, then act on grounded information.
 
 Each episode: a deliberately vague request (e.g. *"Plan a birthday party"*) with a **hidden
 user profile**. The agent has 3 MCP tools: `ask_question`, `propose_plan`, `get_task_info`.
-A **5-component composable rubric** scores the final plan on format, field-match, info-gain,
-question efficiency, and hallucination avoidance.
+A **5-component composable rubric** scores the final plan.
 
 **5 task families**: coding requirements, medical intake, support triage, meeting scheduling, event planning.
 
@@ -403,8 +316,8 @@ question efficiency, and hallucination avoidance.
 | Resource | Link |
 |----------|------|
 | GitHub | [github.com/anurag203/clarify-rl](https://github.com/anurag203/clarify-rl) |
+| Blog / Writeup | [Blog.md](https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/Blog.md) |
 | Colab Notebook | [Open in Colab](https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb) |
-| Blog / Writeup | [docs/blog.md](https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/docs/blog.md) |
 | Trained Model (Run 6) | [clarify-rl-grpo-qwen3-1-7b-run6](https://huggingface.co/Kanan2005/clarify-rl-grpo-qwen3-1-7b-run6) |
 | Trained Model (Run 4) | [clarify-rl-run4-qwen3-1.7b-beta0.2](https://huggingface.co/anurag203/clarify-rl-run4-qwen3-1.7b-beta0.2) |
 | Interactive Demo | [clarify-rl-demo](https://huggingface.co/spaces/anurag203/clarify-rl-demo) |
@@ -417,19 +330,16 @@ question efficiency, and hallucination avoidance.
 _API_MD = """
 ## Environment API
 
-<div class="pulse-dot"></div> This Space exposes a **live** OpenEnv-compatible environment. All endpoints are active right now.
+This Space exposes a **live** OpenEnv-compatible environment. All endpoints are active right now.
 
 ---
 
 ### Health Check
-
 ```bash
 curl https://agarwalanu3103-clarify-rl.hf.space/health
-# {"status": "healthy"}
 ```
 
 ### Reset (start a new episode)
-
 ```bash
 curl -X POST https://agarwalanu3103-clarify-rl.hf.space/reset \\
   -H 'Content-Type: application/json' \\
@@ -437,30 +347,19 @@ curl -X POST https://agarwalanu3103-clarify-rl.hf.space/reset \\
 ```
 
 ### Step (take an action)
-
 ```bash
 curl -X POST https://agarwalanu3103-clarify-rl.hf.space/step \\
   -H 'Content-Type: application/json' \\
-  -d '{
-    "type": "call_tool",
-    "tool_name": "ask_question",
-    "arguments": {"question": "What is the budget?"}
-  }'
+  -d '{"type":"call_tool","tool_name":"ask_question","arguments":{"question":"What is the budget?"}}'
 ```
 
-### WebSocket (for training / streaming)
-
+### WebSocket
 ```python
 import websockets, json, asyncio
 
 async def demo():
-    async with websockets.connect(
-        "wss://agarwalanu3103-clarify-rl.hf.space/ws"
-    ) as ws:
-        await ws.send(json.dumps({
-            "type": "reset",
-            "data": {"task_id": "easy"}
-        }))
+    async with websockets.connect("wss://agarwalanu3103-clarify-rl.hf.space/ws") as ws:
+        await ws.send(json.dumps({"type": "reset", "data": {"task_id": "easy"}}))
         print(json.loads(await ws.recv()))
 
 asyncio.run(demo())
@@ -473,32 +372,20 @@ asyncio.run(demo())
 | Tool | Arguments | Description |
 |------|-----------|-------------|
 | `ask_question` | `{"question": "..."}` | Ask one clarifying question (max 6/episode) |
-| `propose_plan` | `{"plan": '{"field": "val"}'}` | Submit final plan as JSON string. **Ends episode.** |
+| `propose_plan` | `{"plan": '{"key":"val"}'}` | Submit final plan as JSON string. **Ends episode.** |
 | `get_task_info` | `{}` | Re-read the original user request |
 
 ---
 
 ## Run Locally with Docker
-
 ```bash
 git clone https://github.com/anurag203/clarify-rl.git
 cd clarify-rl
 docker build -t clarify-rl .
 docker run -p 7860:7860 clarify-rl
-# Visit http://localhost:7860
 ```
-
-Or with pip:
-
-```bash
-pip install -e .
-uvicorn server.app:app --host 0.0.0.0 --port 7860
-```
-
----
 
 ## openenv.yaml
-
 ```yaml
 spec_version: 1
 name: clarify_rl
@@ -506,7 +393,6 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 7860
-
 tasks:
   - id: easy
     title: "Mild Ambiguity (2-3 fields)"
@@ -519,10 +405,7 @@ tasks:
     max_steps: 12
 ```
 
----
-
 ## Composable Rubric
-
 ```
 Sequential(
   Gate(FormatCheck, threshold=0.5),
@@ -539,32 +422,34 @@ Sequential(
 _RESULTS_MD = """
 ## Training Progression
 
-The plots below show reward climbing over 300-400 training steps for all GRPO runs.
-**Run 6** (dark blue) has the healthiest reward curve: non-zero from step 1, peaking at **0.27**.
+Run 6 (dark blue) has the healthiest reward curve: **non-zero from step 1**, peaking at **0.27**.
+Run 7 (beta=0.3, lr=1e-6) is training with rewards reaching **0.73** at step 115.
 
 ### Root causes fixed in Run 6
 
-1. **Example contamination** &mdash; removed misleading field-name example from the prompt
+1. **Example contamination** &mdash; removed misleading field-name example
 2. **Sparse reward** &mdash; added plan-submission bonus and no-plan penalty
 3. **Missing required keys** &mdash; surfaced required field names in the observation
 4. **Role mismatch** &mdash; aligned training and eval prompt formats
 
 ---
 
-## KL-Anchor Ablation
+## KL-Anchor Ablation (5-point beta sweep)
 
-**GRPO without a KL anchor causes catastrophic capability collapse.**
-
-- Run 2 (`beta=0`) destroyed event_planning: `0.138 -> 0.000`
-- Run 4 (`beta=0.2`) recovered it and **beat the base**: `0.175 vs 0.138`
-- Run 6 (`beta=1.0`, fixed pipeline) nearly matches base aggregate with the strongest training signal
+| Beta | Run | Avg Score | Key finding |
+|------|-----|-----------|-------------|
+| 0.0 | Run 2 | 0.029 | Catastrophic collapse on event_planning |
+| 0.2 | Run 4 | 0.056 | Recovered event_planning, beats base (0.175 vs 0.138) |
+| 0.3 | Run 7 | *training* | Training reward 0.48-0.73 (highest ever) |
+| 0.5 | Run 5 | *canceled* | Reward stuck at 0 (pre-fix pipeline) |
+| 1.0 | Run 6 | 0.061 | Nearly matches base. Strongest training signal pre-Run 7. |
 
 ---
 """
 
 
 # ---------------------------------------------------------------------------
-# Live demo helpers
+# Live demo
 # ---------------------------------------------------------------------------
 
 def _load_sample_traces() -> list[dict[str, Any]]:
@@ -589,7 +474,6 @@ def _format_trace_as_chat(trace: dict) -> list[list]:
     fam = trace.get("family", "unknown")
     score = trace.get("final_score", 0)
     pairs.append([None, f"**{sid}** | Family: `{fam}` | Score: **{score:.3f}**"])
-
     turns = trace.get("turns", trace.get("conversation", []))
     if isinstance(turns, list):
         pending = None
@@ -603,11 +487,9 @@ def _format_trace_as_chat(trace: dict) -> list[list]:
                 pending = None
         if pending:
             pairs.append([pending, None])
-
     bd = trace.get("score_breakdown", {})
     if bd:
-        lines = "\n".join(f"  - **{k}**: {v:.3f}" for k, v in bd.items())
-        pairs.append([None, f"**Rubric Breakdown**:\n{lines}"])
+        pairs.append([None, "**Rubric**: " + " | ".join(f"**{k}**: {v:.3f}" for k, v in bd.items())])
     return pairs
 
 
@@ -625,21 +507,18 @@ async def _run_live_episode(difficulty: str) -> list[list]:
                 info = json.loads(raw) if isinstance(raw, str) else raw
             except (json.JSONDecodeError, TypeError):
                 info = {}
-
             req = info.get("request", str(info))
             fam = info.get("family", "unknown")
             mx = info.get("max_steps", 8)
             pairs.append([f"Start ({difficulty})", f"**{fam}**: \"{req}\"\nBudget: {mx} steps"])
-
             for step in range(1, mx + 1):
                 action = {"type": "step", "data": {"type": "call_tool", "tool_name": "get_task_info", "arguments": {}}}
                 await ws.send(json.dumps(action))
                 sr = json.loads(await ws.recv())
                 sd = sr.get("data", {})
-                so = sd.get("observation", {})
                 rw = sd.get("reward", 0)
                 dn = sd.get("done", False)
-                rs = so.get("result", "")
+                rs = sd.get("observation", {}).get("result", "")
                 pairs.append([f"Step {step}: `get_task_info`", f"Reward: `{rw}` | Done: `{dn}`\n```\n{str(rs)[:300]}\n```"])
                 if dn:
                     break
@@ -649,97 +528,71 @@ async def _run_live_episode(difficulty: str) -> list[list]:
 
 
 # ---------------------------------------------------------------------------
-# Build the Blocks app
+# Build
 # ---------------------------------------------------------------------------
 
 def build_gradio_ui() -> gr.Blocks:
 
-    with gr.Blocks(
-        title="ClarifyRL — AskBeforeYouAct",
-        css=_NEON_CSS,
-    ) as demo:
+    with gr.Blocks(title="ClarifyRL — AskBeforeYouAct") as demo:
 
-        # ── Neon header ──────────────────────────────────────────
-        gr.HTML("""
-        <div class="neon-header">
-            <h1>CLARIFY RL</h1>
-            <p><span class="pulse-dot"></span>
-               Train LLMs to <strong>ask clarifying questions</strong> instead of hallucinating
-            </p>
-            <p style="margin-top:8px; font-size:0.85em;">
-                <a href="https://github.com/anurag203/clarify-rl">GitHub</a> &nbsp;&bull;&nbsp;
-                <a href="https://huggingface.co/spaces/agarwalanu3103/clarify-rl/blob/main/docs/blog.md">Blog</a> &nbsp;&bull;&nbsp;
-                <a href="https://colab.research.google.com/github/anurag203/clarify-rl/blob/main/training/train_grpo.ipynb">Colab</a> &nbsp;&bull;&nbsp;
-                <a href="https://huggingface.co/spaces/anurag203/clarify-rl-demo">Demo</a>
-            </p>
-        </div>
-        """)
+        # Inject CSS via HTML tag — the only reliable method with mount_gradio_app + Gradio 6.x
+        gr.HTML(f"<style>{_CSS}</style>")
 
-        # ── Stat cards ───────────────────────────────────────────
+        # Header with inline styles as fallback
+        gr.HTML(_header_html())
+
+        # Stat cards with inline styles
         gr.HTML(_stat_cards_html())
 
         with gr.Tabs():
 
-            # ── TAB 1: Overview ──────────────────────────────────
-            with gr.TabItem("Overview", id="overview"):
+            with gr.TabItem("Overview"):
                 gr.Markdown(_OVERVIEW_MD)
-
                 hero = _plot_path("08_training_progression.png")
                 if hero:
-                    gr.Image(hero, label="Training Progression & Eval Results", elem_classes=["hero-img"])
-
+                    gr.Image(hero, label="Training Progression & Eval Results")
                 gr.Markdown("### Score Table (all runs, n=50 held-out)")
                 gr.Markdown(_load_summary_table())
+                si = _plot_path("07_runs_summary_table.png")
+                if si:
+                    gr.Image(si, label="Runs Summary")
 
-                summary_img = _plot_path("07_runs_summary_table.png")
-                if summary_img:
-                    gr.Image(summary_img, label="Runs Summary", elem_classes=["plot-img"])
-
-            # ── TAB 2: Live Demo ─────────────────────────────────
-            with gr.TabItem("Live Demo", id="demo"):
+            with gr.TabItem("Live Demo"):
                 gr.Markdown(
                     "## Try the Environment\n\n"
                     "Run a **live episode** against the ClarifyRL environment. "
-                    "Select difficulty and click **Run Episode**.\n\n"
-                    "*Runs the environment only (no trained model). Demonstrates the API loop.*"
+                    "Select difficulty and click **Run Episode**."
                 )
                 with gr.Row():
                     difficulty = gr.Dropdown(["easy", "medium", "hard"], value="medium", label="Difficulty", scale=1)
                     run_btn = gr.Button("Run Episode", variant="primary", scale=1)
-
                 chatbot = gr.Chatbot(label="Episode Trace", height=450)
 
-                def run_episode(diff):
+                def run_ep(diff):
                     try:
                         return asyncio.run(_run_live_episode(diff))
                     except Exception as exc:
                         return [[None, f"Error: {exc}"]]
 
-                run_btn.click(fn=run_episode, inputs=[difficulty], outputs=[chatbot])
+                run_btn.click(fn=run_ep, inputs=[difficulty], outputs=[chatbot])
 
                 gr.Markdown("---\n### Pre-recorded Eval Traces")
-                trace_dd = gr.Dropdown(choices=[], label="Select a scored trace", interactive=True)
-                trace_chat = gr.Chatbot(label="Eval Trace Replay", height=400)
-
+                tdd = gr.Dropdown(choices=[], label="Select a scored trace", interactive=True)
+                tchat = gr.Chatbot(label="Eval Trace Replay", height=400)
                 _traces = _load_sample_traces()
                 if _traces:
                     _labels = [f"{t.get('scenario_id', f't-{i}')} (score={t.get('final_score',0):.3f})" for i, t in enumerate(_traces)]
-                    trace_dd.choices = _labels
-
+                    tdd.choices = _labels
                     def _show(sel):
-                        if not sel:
-                            return []
+                        if not sel: return []
                         idx = next((i for i, l in enumerate(_labels) if l == sel), None)
                         return _format_trace_as_chat(_traces[idx]) if idx is not None else []
+                    tdd.change(fn=_show, inputs=[tdd], outputs=[tchat])
 
-                    trace_dd.change(fn=_show, inputs=[trace_dd], outputs=[trace_chat])
-
-            # ── TAB 3: API & Docker ──────────────────────────────
-            with gr.TabItem("API & Docker", id="api"):
+            with gr.TabItem("API & Docker"):
                 gr.Markdown(_API_MD)
 
-            # ── TAB 4: Training Results ──────────────────────────
-            with gr.TabItem("Training Results", id="results"):
+            with gr.TabItem("Training Results"):
                 gr.Markdown(_RESULTS_MD)
                 for title, fname in [
                     ("Training Progression", "08_training_progression.png"),
@@ -747,13 +600,13 @@ def build_gradio_ui() -> gr.Blocks:
                     ("Reward & KL Curves", "01_reward_loss_curves.png"),
                     ("Same-Base Delta", "06_same_base_delta.png"),
                     ("Per-Family Scores", "02_per_family_bars.png"),
-                    ("Rubric Component Breakdown", "03_component_breakdown.png"),
+                    ("Component Breakdown", "03_component_breakdown.png"),
                     ("Before vs After", "04_before_after.png"),
                     ("Question Efficiency", "05_question_efficiency.png"),
                 ]:
                     p = _plot_path(fname)
                     if p:
                         gr.Markdown(f"### {title}")
-                        gr.Image(p, show_label=False, elem_classes=["plot-img"])
+                        gr.Image(p, show_label=False)
 
     return demo
