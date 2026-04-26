@@ -129,6 +129,103 @@ button[role="tab"][aria-selected="true"], button[role="tab"].selected,
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.025); }
 }
+
+/* ── Big-card tab navigation ────────────────────────────── */
+/* Hide Gradio's default tab strip + overflow menu ONLY inside our tabs
+   container so the custom card grid is the sole navigation chrome. */
+.clarify-tabs > .tab-wrapper,
+.clarify-tabs .tab-wrapper,
+.clarify-tabs > div > [role="tablist"],
+.clarify-tabs .overflow-menu,
+.clarify-tabs .tab-nav {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.tab-card-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 14px !important;
+    margin: 8px 0 22px 0 !important;
+}
+@media (max-width: 900px) {
+    .tab-card-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+.tab-card, .tab-card > button, button.tab-card {
+    min-height: 132px !important;
+    height: auto !important;
+    border-radius: 14px !important;
+    padding: 20px 16px !important;
+    background: #111128 !important;
+    border: 2px solid #1e1e4a !important;
+    color: #e0e0ff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.82em !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.4px !important;
+    text-transform: none !important;
+    text-align: center !important;
+    white-space: pre-line !important;
+    line-height: 1.45 !important;
+    cursor: pointer !important;
+    transition: all 0.25s ease !important;
+    box-shadow: none !important;
+    background-image: none !important;
+    width: 100% !important;
+}
+.tab-card::before, .tab-card > button::before, button.tab-card::before {
+    display: block !important;
+    font-size: 2.4em !important;
+    line-height: 1 !important;
+    margin-bottom: 10px !important;
+    filter: grayscale(0.15) brightness(1.05);
+    transition: all 0.25s ease;
+}
+.tab-card-results::before, .tab-card-results > button::before, button.tab-card-results::before { content: "📊"; }
+.tab-card-watch::before,   .tab-card-watch > button::before,   button.tab-card-watch::before   { content: "🎬"; }
+.tab-card-env::before,     .tab-card-env > button::before,     button.tab-card-env::before     { content: "⚡"; }
+.tab-card-plots::before,   .tab-card-plots > button::before,   button.tab-card-plots::before   { content: "🖼"; }
+
+.tab-card::first-line, .tab-card > button::first-line, button.tab-card::first-line {
+    font-family: 'Orbitron', monospace !important;
+    font-size: 1.18em !important;
+    font-weight: 800 !important;
+    letter-spacing: 2px !important;
+    color: #e0e0ff !important;
+    text-transform: uppercase;
+}
+
+.tab-card:hover, .tab-card > button:hover, button.tab-card:hover {
+    border-color: #00f0ff !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 0 24px rgba(0,240,255,0.22), 0 0 40px rgba(255,0,229,0.08) !important;
+    background: #14143a !important;
+}
+.tab-card:hover::before, .tab-card > button:hover::before, button.tab-card:hover::before {
+    filter: grayscale(0) brightness(1.2) drop-shadow(0 0 8px rgba(0,240,255,0.5));
+    transform: scale(1.08);
+}
+
+.tab-card.active, .tab-card.active > button, button.tab-card.active {
+    border-color: transparent !important;
+    background:
+        linear-gradient(#0d0d2b, #0d0d2b) padding-box,
+        linear-gradient(135deg, #00f0ff, #ff00e5) border-box !important;
+    border: 2px solid transparent !important;
+    box-shadow: 0 0 28px rgba(0,240,255,0.35), inset 0 0 18px rgba(0,240,255,0.08) !important;
+    transform: scale(1.02) !important;
+    color: #ffffff !important;
+}
+.tab-card.active::before, .tab-card.active > button::before, button.tab-card.active::before {
+    filter: grayscale(0) brightness(1.3) drop-shadow(0 0 12px rgba(0,240,255,0.6));
+}
+.tab-card.active::first-line, .tab-card.active > button::first-line, button.tab-card.active > button::first-line {
+    color: #00f0ff !important;
+    text-shadow: 0 0 10px rgba(0,240,255,0.5);
+}
 """
 
 
@@ -560,10 +657,39 @@ def build_gradio_ui() -> gr.Blocks:
         gr.HTML(_stat_chips_html())
         gr.HTML(_story_flow_html())
 
-        with gr.Tabs():
+        # ── Big-card tab navigation ────────────────────────────────
+        # Four large clickable cards replace Gradio's default tab strip.
+        # The strip itself is hidden via CSS (.clarify-tabs); these cards
+        # drive `tabs.selected` programmatically and flip their own
+        # `.active` class to mirror the selected tab.
+        _CARD_BASE_RESULTS = ["tab-card", "tab-card-results"]
+        _CARD_BASE_WATCH   = ["tab-card", "tab-card-watch"]
+        _CARD_BASE_ENV     = ["tab-card", "tab-card-env"]
+        _CARD_BASE_PLOTS   = ["tab-card", "tab-card-plots"]
+
+        with gr.Row(elem_classes=["tab-card-grid"]):
+            btn_results = gr.Button(
+                value="RESULTS\nHeadline scoreboard + winning run",
+                elem_classes=_CARD_BASE_RESULTS + ["active"],
+            )
+            btn_watch = gr.Button(
+                value="WATCH AGENT PLAY\nReplay 7 scored episodes",
+                elem_classes=_CARD_BASE_WATCH,
+            )
+            btn_env = gr.Button(
+                value="USE THE ENV\nWebSocket / cURL demo",
+                elem_classes=_CARD_BASE_ENV,
+            )
+            btn_plots = gr.Button(
+                value="PLOT DECK\nAll 9 training & eval plots",
+                elem_classes=_CARD_BASE_PLOTS,
+            )
+
+        tabs = gr.Tabs(elem_classes=["clarify-tabs"])
+        with tabs:
 
             # ── TAB 1: Results ────────────────────────────────────
-            with gr.TabItem("Results"):
+            with gr.TabItem("Results", id="results"):
                 hero = _plot_path("08_training_progression.png")
                 if hero:
                     gr.Image(hero, label="Training Progression & Eval Results")
@@ -576,7 +702,7 @@ def build_gradio_ui() -> gr.Blocks:
                     gr.Image(si, label="Runs Summary Scoreboard")
 
             # ── TAB 2: Watch Agent Play ──────────────────────────
-            with gr.TabItem("Watch Agent Play"):
+            with gr.TabItem("Watch Agent Play", id="watch"):
                 gr.Markdown(
                     "## Scored Episode Replays\n\n"
                     "Browse **real eval episodes** where the trained model asked questions and proposed plans. "
@@ -625,11 +751,11 @@ def build_gradio_ui() -> gr.Blocks:
                 run_btn.click(fn=run_ep, inputs=[difficulty], outputs=[raw_chat])
 
             # ── TAB 3: Use the Env ───────────────────────────────
-            with gr.TabItem("Use the Env"):
+            with gr.TabItem("Use the Env", id="env"):
                 gr.Markdown(_API_MD)
 
             # ── TAB 4: Plot Deck ─────────────────────────────────
-            with gr.TabItem("Plot Deck"):
+            with gr.TabItem("Plot Deck", id="plots"):
                 gr.Markdown(_RESULTS_MD)
                 for title, fname in [
                     ("Training Progression", "08_training_progression.png"),
@@ -645,5 +771,25 @@ def build_gradio_ui() -> gr.Blocks:
                     if p:
                         gr.Markdown(f"### {title}")
                         gr.Image(p, show_label=False)
+
+        # ── Wire card clicks → switch underlying tab + flip active class ──
+        # Each handler returns (Tabs(selected=...), 4 button updates).
+        # Only the matching button gets `active`; others reset to base classes.
+        def _make_select(target: str):
+            def _fn():
+                return (
+                    gr.Tabs(selected=target),
+                    gr.update(elem_classes=_CARD_BASE_RESULTS + (["active"] if target == "results" else [])),
+                    gr.update(elem_classes=_CARD_BASE_WATCH   + (["active"] if target == "watch"   else [])),
+                    gr.update(elem_classes=_CARD_BASE_ENV     + (["active"] if target == "env"     else [])),
+                    gr.update(elem_classes=_CARD_BASE_PLOTS   + (["active"] if target == "plots"   else [])),
+                )
+            return _fn
+
+        _outs = [tabs, btn_results, btn_watch, btn_env, btn_plots]
+        btn_results.click(fn=_make_select("results"), outputs=_outs)
+        btn_watch.click(  fn=_make_select("watch"),   outputs=_outs)
+        btn_env.click(    fn=_make_select("env"),     outputs=_outs)
+        btn_plots.click(  fn=_make_select("plots"),   outputs=_outs)
 
     return demo
