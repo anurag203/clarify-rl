@@ -19,8 +19,6 @@ tags:
 - tool-use
 - clarifying-questions
 - ask-vs-guess
-datasets:
-- agarwalanu3103/clarify-rl
 model-index:
 - name: clarify-rl-run4-qwen3-1.7b-beta0.2
   results:
