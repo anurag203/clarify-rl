@@ -152,6 +152,10 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 
 > **The 4B base — without any RL — is the strongest model on every solvable family.** That sets the real ceiling for any future 4B GRPO run. Instruct-tuning *hurt* Qwen3-4B for this multi-turn tool-using task (4B-Inst < 4B base everywhere).
 
+![ClarifyRL — per-run × per-family scoreboard with green-cell highlight on best score per family](plots/07_runs_summary_table.png)
+
+> *Same numbers, single image:* the 7-row × 6-column scoreboard rendered as a self-contained PNG so judges can drop it into a slide unchanged. Green cells mark the best score in each family. **Run 4 (1.7B, β=0.2) is the only trained run that beats its same-size base on `event_planning` (0.175 vs 0.138).** The 4B base is the ceiling — `event_planning` 0.340 / `meeting_scheduling` 0.287 — and is unattainable for any RL on smaller models without burning more compute than the hackathon budget allowed.
+
 | Submission asset | Link |
 |---|---|
 | HF Space (env) | https://huggingface.co/spaces/agarwalanu3103/clarify-rl |
@@ -180,25 +184,25 @@ A research lab could plug ClarifyRL in tomorrow as the "humility-shaping" stage 
 
 ![Per-family scores](plots/02_per_family_bars.png)
 
-> *Avg final score per task family, comparing every series we evaluated: random policy → base models → trained runs.* `event_planning` and `meeting_scheduling` show meaningful learning across runs; `medical_intake` and `support_triage` are still 0 across the board (open future work). Same-axes overlay — judges can read each family in 5 seconds.
+> *Avg final score per task family for every series we evaluated: random policy → base models → trained runs.* The two solvable families are `event_planning` and `meeting_scheduling`; the 4B base (purple) sets the ceiling. **Run 4 (deep green, +KL) clears Run 2 (red, no-KL) on `event_planning` from 0 → 0.175** — the controlled KL ablation. Each model size has its own distinct color so the same-base comparison reads in 5 seconds; `medical_intake` and `support_triage` are honestly 0 across the board (open future work).
 
 ### Rubric component breakdown — what's actually carrying the score
 
 ![Component breakdown](plots/03_component_breakdown.png)
 
-> *Reward decomposed into FieldMatch / InfoGain / QuestionEfficiency / HallucinationCheck for every series.* Format pass is 0% across all models, so the score is **entirely** carried by the semantic components. `InfoGain` and `FieldMatch` are where GRPO is paying off; `HallucinationCheck` lights up exactly where the agent stops fabricating fields the user never said.
+> *Reward decomposed into FormatCheck / FieldMatch / InfoGain / QuestionEfficiency / HallucinationCheck — averaged only across scenarios where the rubric actually computed a score (the legend annotates `n_scored` per series so judges can see the coverage honestly).* `InfoGain` clears 0.5–0.85 across nearly every model — the agent's questions are typically informative when it asks them. `FieldMatch` is where the larger bases (4B base purple, 4B-Inst teal, Run 2 red) lead and where Run 4 trades off — Run 4 asks more questions per scenario before committing fields, which is the price of recovering `event_planning`. `HallucinationCheck` ≥ 0.5 across all models confirms the rubric is *not* rewarding fabricated fields.
 
 ### Before / after — aggregate metrics
 
 ![Before vs after](plots/04_before_after.png)
 
-> *Avg final score, format pass rate, completion rate — random policy vs each base vs each trained run.* Run 4 cleanly beats its same-size base on aggregate; Run 1 unlocks a new family the base never solved. Random policy is at 0 across every metric, confirming the env is non-trivial.
+> *Avg final score and completion rate, with each bar value labelled.* Read the 1.7B trio left-to-right: **base 0.067 (light green) → Run 2 no-KL 0.029 (red — clear regression) → Run 4 +KL 0.056 (deep green — recovers most of the base)**. The 4B base (purple) at 0.145 is the unattainable ceiling for our compute budget. Random policy is at 0 across every metric, confirming the env is non-trivial. Y-axis is auto-scaled to the data range so the deltas are visible — not lost in unused 0.3–1.0 whitespace.
 
 ### Question efficiency — does the trained agent ask fewer, better questions?
 
 ![Questions asked per scenario](plots/05_question_efficiency.png)
 
-> *Histogram of questions asked per scenario, with mean labelled per series.* Trained models concentrate around 4–5 questions; the base 0.6B mostly times out at the 6-question budget without ever proposing. The shift left of mass is "shorter trajectories with higher score" — exactly what the `QuestionEfficiency` rubric component pushes.
+> *Histogram of questions asked per scenario, with mean labelled per series.* The base **0.6B base** (mean 2.84, orange) gives up early — 10 of 50 scenarios finish at 0 questions because the small base can't generate valid plans at all. The **0.6B GRPO Run 1** (mean 4.20, blue) shifts mass into the productive 4-question region — that's the "ask before guessing" behaviour we wanted. **Run 2 (1.7B no-KL, 5.70)** and **Run 4 (1.7B +KL, 5.26)** sit near the 6-question ceiling because the larger base can already produce passable JSON; they spend the budget gathering more info before committing.
 
 ### W&B + raw plots
 

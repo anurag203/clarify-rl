@@ -53,6 +53,52 @@ def _safe_mean(xs: list[float]) -> float:
     return statistics.mean(xs) if xs else 0.0
 
 
+# Stable label -> color map. Same label = same color in every plot, no
+# collisions across the 8 series we render in the submission deck. Values
+# are picked from matplotlib's tab20 + a couple of overrides to keep the
+# headline trios (Run 1 / Run 2 / Run 4) clearly distinct.
+_LABEL_COLORS: dict[str, str] = {
+    "policy (deterministic)":   "#9e9e9e",   # neutral grey
+    "policy (baseline)":        "#9e9e9e",
+    "0.6B base":                "#ffb74d",   # warm orange
+    "0.6B GRPO (Run 1)":        "#1f77b4",   # strong blue
+    "1.7B base":                "#66bb6a",   # mid green
+    "1.7B GRPO no-KL (Run 2)":  "#e53935",   # red — the regression run
+    "1.7B GRPO +KL (Run 4)":    "#2e7d32",   # deep green — KL-anchored hero
+    "4B base":                  "#5e35b1",   # purple — ceiling marker
+    "4B-instruct":              "#00838f",   # teal
+    "4B GRPO (Run 3)":          "#ff6f00",   # amber
+    "untrained":                "#ffb74d",
+    "trained":                  "#1f77b4",
+}
+
+# Fallback palette when a label isn't pre-mapped. tab20-style colors
+# already chosen to contrast with the named ones above.
+_FALLBACK_COLORS: list[str] = [
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+    "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+]
+
+
+def _color_for(label: str, fallback_index: int = 0) -> str:
+    """Return a stable, distinct color for `label`."""
+    if label in _LABEL_COLORS:
+        return _LABEL_COLORS[label]
+    return _FALLBACK_COLORS[fallback_index % len(_FALLBACK_COLORS)]
+
+
+def _autoscale_top(values: list[float], floor: float = 0.10, headroom: float = 1.20) -> float:
+    """Pick a y-axis top so the data fills the visible range.
+
+    `floor` is the minimum top we want even when values are tiny (so a single
+    very low bar doesn't end up at 100% of the axis and look misleading).
+    """
+    if not values:
+        return 1.0
+    top = max(values) * headroom
+    return max(top, floor)
+
+
 # ---------------------------------------------------------------------------
 # Plot 1 — Reward + Loss curves
 # ---------------------------------------------------------------------------
@@ -215,23 +261,27 @@ def plot_per_family_bars(evals: dict[str, dict | None], out_path: Path) -> None:
     x = list(range(n_groups))
 
     fig, ax = plt.subplots(figsize=(max(8, n_groups * 1.4), 5))
-    palette = ["tab:gray", "tab:orange", "tab:blue", "tab:green", "tab:red"]
+    all_values: list[float] = []
     for i, (label, scores) in enumerate(matrix.items()):
+        vals = [scores[fam] for fam in families]
+        all_values.extend(vals)
         ax.bar(
             [xi + (i - (n_series - 1) / 2) * width for xi in x],
-            [scores[fam] for fam in families],
+            vals,
             width=width,
             label=label,
-            color=palette[i % len(palette)],
+            color=_color_for(label, i),
+            edgecolor="white",
+            linewidth=0.5,
         )
 
     ax.set_xticks(x)
     ax.set_xticklabels(families, rotation=15, ha="right")
-    ax.set_ylabel("Avg final score")
-    ax.set_title("Avg score per task family")
-    ax.set_ylim(0.0, 1.0)
+    ax.set_ylabel("Avg final score (n=50, eval v4)")
+    ax.set_title("Avg score per task family — base vs trained, all model sizes")
+    ax.set_ylim(0.0, _autoscale_top(all_values, floor=0.40))
     ax.grid(alpha=0.3, axis="y")
-    ax.legend()
+    ax.legend(loc="upper right", fontsize=8, framealpha=0.95)
     fig.tight_layout()
     fig.savefig(out_path, dpi=160)
     plt.close(fig)
@@ -251,46 +301,70 @@ def plot_component_breakdown(evals: dict[str, dict | None], out_path: Path) -> N
 
     import matplotlib.pyplot as plt
 
-    component_names = ["FieldMatch", "InfoGain", "QuestionEfficiency", "HallucinationCheck"]
+    # Real keys in the eval JSON are e.g. `FieldMatchRubric` (with suffix).
+    # We display the short name on the axis but look up `<short>Rubric` first.
+    component_names = ["FormatCheck", "FieldMatch", "InfoGain", "QuestionEfficiency", "HallucinationCheck"]
 
+    def _bd_get(bd: dict, c: str) -> float | None:
+        for key in (f"{c}Rubric", c, c.lower(), c.replace("Check", "")):
+            v = bd.get(key)
+            if v is not None:
+                try:
+                    return float(v)
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    # Average ONLY across scenarios where a score breakdown was actually
+    # produced (i.e. the rubric ran). Format-failed scenarios with `{}` get
+    # filtered out so the bars represent "given the rubric ran, here is each
+    # component's contribution" — which is what the README claims.
     matrix: dict[str, dict[str, float]] = {}
+    coverage: dict[str, int] = {}
     for label, ev in series.items():
         sums: dict[str, list[float]] = {c: [] for c in component_names}
+        n_scored = 0
         for r in ev.get("results", []):
             bd = r.get("score_breakdown") or {}
+            if not bd:
+                continue
+            n_scored += 1
             for c in component_names:
-                v = bd.get(c)
-                if v is None:
-                    v = bd.get(c.lower()) or bd.get(c.replace("Check", "")) or 0.0
-                try:
-                    sums[c].append(float(v))
-                except (TypeError, ValueError):
-                    sums[c].append(0.0)
+                v = _bd_get(bd, c)
+                if v is not None:
+                    sums[c].append(v)
         matrix[label] = {c: _safe_mean(sums[c]) for c in component_names}
+        coverage[label] = n_scored
 
     n_comps = len(component_names)
     n_series = len(series)
     width = 0.8 / max(1, n_series)
     x = list(range(n_comps))
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    palette = ["tab:gray", "tab:orange", "tab:blue", "tab:green", "tab:red"]
+    fig, ax = plt.subplots(figsize=(11, 5.5))
+    all_values: list[float] = []
     for i, (label, scores) in enumerate(matrix.items()):
+        vals = [scores[c] for c in component_names]
+        all_values.extend(vals)
+        n = coverage.get(label, 0)
+        legend_label = f"{label} (n_scored={n}/{len(series.get(label, {}).get('results', []))})"
         ax.bar(
             [xi + (i - (n_series - 1) / 2) * width for xi in x],
-            [scores[c] for c in component_names],
+            vals,
             width=width,
-            label=label,
-            color=palette[i % len(palette)],
+            label=legend_label,
+            color=_color_for(label, i),
+            edgecolor="white",
+            linewidth=0.5,
         )
 
     ax.set_xticks(x)
     ax.set_xticklabels(component_names, rotation=10, ha="right")
-    ax.set_ylabel("Avg component score")
-    ax.set_title("Reward breakdown by rubric component")
-    ax.set_ylim(0.0, 1.0)
+    ax.set_ylabel("Avg component score (when rubric ran)")
+    ax.set_title("Reward breakdown by rubric component (conditional on score being computed)")
+    ax.set_ylim(0.0, _autoscale_top(all_values, floor=1.0))
     ax.grid(alpha=0.3, axis="y")
-    ax.legend()
+    ax.legend(loc="upper right", fontsize=7, framealpha=0.95)
     fig.tight_layout()
     fig.savefig(out_path, dpi=160)
     plt.close(fig)
@@ -312,7 +386,6 @@ def plot_before_after(evals: dict[str, dict | None], out_path: Path) -> None:
 
     metrics = {
         "avg_score": "Avg final score",
-        "format_pass_rate": "Format pass rate",
         "completion_rate": "Completion rate",
     }
     n_series = len(series)
@@ -320,26 +393,33 @@ def plot_before_after(evals: dict[str, dict | None], out_path: Path) -> None:
     width = 0.8 / max(1, n_series)
     x = list(range(n_metrics))
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    palette = ["tab:gray", "tab:orange", "tab:blue", "tab:green", "tab:red"]
+    fig, ax = plt.subplots(figsize=(11, 5.5))
+    all_values: list[float] = []
     for i, (label, ev) in enumerate(series.items()):
         s = ev.get("summary", {}) or {}
         vals = [float(s.get(k, 0.0)) for k in metrics]
-        ax.bar(
+        all_values.extend(vals)
+        bars = ax.bar(
             [xi + (i - (n_series - 1) / 2) * width for xi in x],
             vals,
             width=width,
             label=label,
-            color=palette[i % len(palette)],
+            color=_color_for(label, i),
+            edgecolor="white",
+            linewidth=0.5,
         )
+        for b, v in zip(bars, vals):
+            if v > 0:
+                ax.text(b.get_x() + b.get_width() / 2, v + 0.005,
+                        f"{v:.3f}", ha="center", va="bottom", fontsize=7)
 
     ax.set_xticks(x)
-    ax.set_xticklabels(list(metrics.values()), rotation=10, ha="right")
-    ax.set_ylim(0.0, 1.0)
-    ax.set_ylabel("Score / rate")
-    ax.set_title("Aggregate eval metrics")
+    ax.set_xticklabels(list(metrics.values()), rotation=0, ha="center")
+    ax.set_ylim(0.0, _autoscale_top(all_values, floor=0.30))
+    ax.set_ylabel("Score / rate (n=50, eval v4)")
+    ax.set_title("Aggregate eval metrics — base vs trained, all model sizes")
     ax.grid(alpha=0.3, axis="y")
-    ax.legend()
+    ax.legend(loc="upper left", fontsize=8, framealpha=0.95)
     fig.tight_layout()
     fig.savefig(out_path, dpi=160)
     plt.close(fig)
@@ -359,8 +439,7 @@ def plot_question_efficiency(evals: dict[str, dict | None], out_path: Path) -> N
 
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(9, 5))
-    palette = ["tab:gray", "tab:orange", "tab:blue", "tab:green", "tab:red"]
+    fig, ax = plt.subplots(figsize=(10, 5.5))
     bins = list(range(0, 8))  # 0..7 questions
 
     for i, (label, ev) in enumerate(series.items()):
@@ -370,7 +449,7 @@ def plot_question_efficiency(evals: dict[str, dict | None], out_path: Path) -> N
             bins=bins,
             alpha=0.55,
             label=f"{label} (mean={_safe_mean(qs):.2f})",
-            color=palette[i % len(palette)],
+            color=_color_for(label, i),
             edgecolor="black",
             align="left",
         )
